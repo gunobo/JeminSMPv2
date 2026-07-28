@@ -32,6 +32,7 @@ import jeminsmp.waypoint.WaypointManager;
 import jeminsmp.job.JobManager;
 import jeminsmp.job.JobListener;
 import jeminsmp.job.JobItemListener;
+import jeminsmp.job.JobHotkeyListener;
 import jeminsmp.job.JobCommand;
 import jeminsmp.job.SkillCommand;
 
@@ -234,6 +235,7 @@ public class JeminSMPPlugin extends JavaPlugin {
         var skillCmd = new SkillCommand(this);
         getCommand("skill").setExecutor(skillCmd);
         getCommand("skill").setTabCompleter(skillCmd);
+        getServer().getPluginManager().registerEvents(new JobHotkeyListener(skillCmd), this);
 
         // Trade
         getServer().getPluginManager().registerEvents(new TradeListener(this), this);

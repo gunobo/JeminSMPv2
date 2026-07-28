@@ -33,7 +33,7 @@ public class SkillCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
-    private void handleUse(Player player, String skillArg) {
+    public void handleUse(Player player, String skillArg) {
         SkillType type = SkillType.fromString(skillArg);
         if (type == null) { player.sendMessage("§c존재하지 않는 스킬입니다. (heal|deal|force)"); return; }
 

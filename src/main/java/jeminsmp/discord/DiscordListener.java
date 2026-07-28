@@ -1207,10 +1207,9 @@ public class DiscordListener extends ListenerAdapter {
                         "❓ 사용법:\n"
                         + "`!comp create <id> <기간> <설명> | <보상목록>`\n\n"
                         + "**기간:** `7d` `24h` `30m` `무기한`\n"
-                        + "**보상목록:** `diamond:32,balance:50,cooked_beef:64`\n"
-                        + "**balance** = 경제 잔액\n\n"
+                        + "**보상목록:** `diamond:32,cooked_beef:64`\n\n"
                         + "예시:\n"
-                        + "`!comp create bug_fix 7d 5월 버그 보상 | diamond:32,balance:50`"
+                        + "`!comp create bug_fix 7d 5월 버그 보상 | diamond:32,cooked_beef:64`"
                 ).queue();
                 return;
             }
@@ -1234,31 +1233,18 @@ public class DiscordListener extends ListenerAdapter {
             }
 
             long expiresAt = CompensationManager.parseDuration(duration);
+            var items = CompensationManager.parseItems(rewardStr);
 
-            // balance 파싱
-            long balance = 0;
-            StringBuilder itemStr = new StringBuilder();
-            for (String part : rewardStr.split(",")) {
-                part = part.trim();
-                if (part.startsWith("balance:")) {
-                    try { balance = Long.parseLong(part.substring(8).trim()); } catch (NumberFormatException ignored) {}
-                } else {
-                    if (!itemStr.isEmpty()) itemStr.append(",");
-                    itemStr.append(part);
-                }
-            }
-            var items = CompensationManager.parseItems(itemStr.toString());
-
-            if (balance == 0 && items.isEmpty()) {
+            if (items.isEmpty()) {
                 event.getChannel().sendMessage(
                         "❌ 보상 내용을 인식할 수 없습니다.\n"
-                        + "형식: `diamond:32,balance:50,cooked_beef:64`\n"
+                        + "형식: `diamond:32,cooked_beef:64`\n"
                         + "아이템 이름은 마인크래프트 영문 이름 (예: `golden_apple`, `iron_ingot`)"
                 ).queue();
                 return;
             }
 
-            if (cm.create(id, expiresAt, description, balance, items)) {
+            if (cm.create(id, expiresAt, description, items)) {
                 var ev = cm.getEvent(id);
                 event.getChannel().sendMessage(
                         "✅ **보상 등록 완료!**\n"
@@ -1281,7 +1267,7 @@ public class DiscordListener extends ListenerAdapter {
                 + "`!comp create <id> <기간> <설명> | <보상>` — 보상 등록\n"
                 + "`!comp delete <id>` — 보상 삭제\n\n"
                 + "**기간 예시:** `7d` `24h` `30m` `무기한`\n"
-                + "**보상 예시:** `diamond:32,balance:50,cooked_beef:64`"
+                + "**보상 예시:** `diamond:32,cooked_beef:64`"
         ).queue();
     }
 

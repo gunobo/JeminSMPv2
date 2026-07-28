@@ -64,11 +64,8 @@ import jeminsmp.team.TeamManager;
 import jeminsmp.team.commands.EnderChestCommand;
 import jeminsmp.team.commands.TeamChatCommand;
 import jeminsmp.team.commands.TeamCommand;
-import jeminsmp.title.EconomyHelper;
 import jeminsmp.title.TitleListener;
 import jeminsmp.title.TitleManager;
-import jeminsmp.title.commands.BalanceCommand;
-import jeminsmp.title.commands.EcoCommand;
 import jeminsmp.title.commands.TitleCommand;
 import jeminsmp.tpa.TpaManager;
 import jeminsmp.tpa.commands.TpaAcceptCommand;
@@ -94,7 +91,6 @@ public class JeminSMPPlugin extends JavaPlugin {
     private TeamManager teamManager;
     private TeamLevelManager teamLevelManager;
     private TitleManager titleManager;
-    private EconomyHelper economyHelper;
     private StarterPackCommand starterPackCommand;
     private TabManager tabManager;
     private AnnouncementManager announcementManager;
@@ -139,7 +135,6 @@ public class JeminSMPPlugin extends JavaPlugin {
         tpaManager = new TpaManager(this);
         teamManager = new TeamManager(this);
         teamLevelManager = new TeamLevelManager(this);
-        economyHelper = new EconomyHelper(this);
         titleManager = new TitleManager(this);
         tabManager = new TabManager(this);
         afkManager = new AfkManager(this);
@@ -208,12 +203,10 @@ public class JeminSMPPlugin extends JavaPlugin {
         getCommand("shop").setExecutor(new ShopCommand(this));
         getCommand("우편함").setExecutor(new MailboxCommand(this));
 
-        // Title & Economy
+        // Title
         var titleCmd = new TitleCommand(this);
         getCommand("title").setExecutor(titleCmd);
         getCommand("title").setTabCompleter(titleCmd);
-        getCommand("balance").setExecutor(new BalanceCommand(this));
-        getCommand("eco").setExecutor(new EcoCommand(this));
 
         // Sleep vote
         var sleepCmd = new SleepCommand(this);
@@ -318,7 +311,6 @@ public class JeminSMPPlugin extends JavaPlugin {
     public TeamManager getTeamManager() { return teamManager; }
     public TeamLevelManager getTeamLevelManager() { return teamLevelManager; }
     public TitleManager getTitleManager() { return titleManager; }
-    public EconomyHelper getEconomy() { return economyHelper; }
     public StarterPackCommand getStarterPackCommand() { return starterPackCommand; }
     public AnnouncementManager getAnnouncementManager() { return announcementManager; }
     public AfkManager getAfkManager() { return afkManager; }

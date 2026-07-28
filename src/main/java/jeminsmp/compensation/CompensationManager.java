@@ -30,7 +30,6 @@ public class CompensationManager {
             String id,
             String description,
             long expiresAt,      // epoch ms, -1 = 무기한
-            long balance,        // 경제 지급량 (0 = 없음)
             List<ItemStack> items
     ) {}
 
@@ -53,12 +52,11 @@ public class CompensationManager {
 
     // ── 보상 등록 ──
     public boolean create(String id, long expiresAt, String description,
-                          long balance, List<ItemStack> items) {
+                          List<ItemStack> items) {
         if (cfg.contains("events." + id)) return false;
 
         cfg.set("events." + id + ".description", description);
         cfg.set("events." + id + ".expires",     expiresAt);
-        cfg.set("events." + id + ".balance",     balance);
         cfg.set("events." + id + ".itemCount",   items.size());
         for (int i = 0; i < items.size(); i++) {
             cfg.set("events." + id + ".item_" + i, items.get(i));
@@ -101,14 +99,13 @@ public class CompensationManager {
     private CompEvent load(String id) {
         String desc    = cfg.getString("events." + id + ".description", "");
         long   exp     = cfg.getLong("events." + id + ".expires", -1);
-        long   balance = cfg.getLong("events." + id + ".balance", 0);
         List<ItemStack> items = new ArrayList<>();
         int itemCount = cfg.getInt("events." + id + ".itemCount", 0);
         for (int i = 0; i < itemCount; i++) {
             ItemStack is = cfg.getItemStack("events." + id + ".item_" + i);
             if (is != null && is.getType() != Material.AIR) items.add(is);
         }
-        return new CompEvent(id, desc, exp, balance, items);
+        return new CompEvent(id, desc, exp, items);
     }
 
     public CompEvent getEvent(String id) {
@@ -156,7 +153,6 @@ public class CompensationManager {
     // ── 보상 내용 요약 문자열 ──
     public String formatRewards(CompEvent ev) {
         StringBuilder sb = new StringBuilder();
-        if (ev.balance() > 0) sb.append("💎 잔액 ").append(ev.balance()).append("개  ");
         for (ItemStack is : ev.items()) {
             sb.append(formatItem(is)).append(" ×").append(is.getAmount()).append("  ");
         }

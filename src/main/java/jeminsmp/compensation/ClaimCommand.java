@@ -80,11 +80,6 @@ public class ClaimCommand implements CommandExecutor, TabCompleter {
             }
         }
 
-        // 잔액 지급
-        if (ev.balance() > 0 && plugin.getEconomy() != null) {
-            plugin.getEconomy().deposit(player.getUniqueId(), ev.balance());
-        }
-
         player.sendMessage(Component.text("━━━ 📦 보상 수령 완료 ━━━", NamedTextColor.GOLD));
         player.sendMessage(Component.text("  " + ev.description(), NamedTextColor.WHITE));
         player.sendMessage(Component.text("  " + cm.formatRewards(ev), NamedTextColor.AQUA));

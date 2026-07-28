@@ -54,18 +54,6 @@ public class WaypointCommand implements CommandExecutor, TabCompleter {
                             + (wp.shared() ? " §a[공유중]" : ""));
                 }
             }
-            case "tp", "go" -> {
-                if (args.length < 2) { player.sendMessage("§c사용법: /wp tp <이름>"); return true; }
-                if (plugin.getCombatManager().isInCombat(player.getUniqueId())) {
-                    player.sendMessage("§c전투 중에는 웨이포인트로 이동할 수 없습니다."); return true;
-                }
-                var wp = plugin.getWaypointManager().get(player.getUniqueId(), args[1]);
-                if (wp == null) { player.sendMessage("§c웨이포인트를 찾을 수 없습니다."); return true; }
-                Location loc = wp.toLocation();
-                if (loc == null) { player.sendMessage("§c해당 월드를 찾을 수 없습니다."); return true; }
-                player.teleport(loc);
-                player.sendMessage("§a§e" + wp.name() + " §a(으)로 이동했습니다.");
-            }
             case "del", "delete", "remove" -> {
                 if (args.length < 2) { player.sendMessage("§c사용법: /wp del <이름>"); return true; }
                 if (!plugin.getWaypointManager().delete(player.getUniqueId(), args[1])) {
@@ -92,7 +80,6 @@ public class WaypointCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("§6§l📍 웨이포인트 명령어");
         player.sendMessage("§e/wp add <이름> §7— 현재 위치 저장 (최대 10개)");
         player.sendMessage("§e/wp list §7— 목록 보기 (팀 공유 포함)");
-        player.sendMessage("§e/wp tp <이름> §7— 이동");
         player.sendMessage("§e/wp del <이름> §7— 삭제");
         player.sendMessage("§e/wp share <이름> §7— 팀 공유 토글");
     }
@@ -100,7 +87,7 @@ public class WaypointCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) return List.of();
-        if (args.length == 1) return List.of("add", "list", "tp", "del", "share");
+        if (args.length == 1) return List.of("add", "list", "del", "share");
         if (args.length == 2 && !args[0].equalsIgnoreCase("add") && !args[0].equalsIgnoreCase("list")) {
             return new ArrayList<>(plugin.getWaypointManager().getNames(player.getUniqueId()));
         }

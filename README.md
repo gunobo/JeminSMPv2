@@ -25,11 +25,10 @@ mvn package -q
 | 💬 닉네임 | `/nick <닉네임>` `/nick reset` |
 | 🏅 칭호 | `/title list/buy/equip/remove/mytitles` |
 | 🤖 자동 칭호 | 킬·플레이타임·발전과제 달성 시 자동 지급 |
-| 💰 경제 | `/balance` `/eco give\|take\|set` |
-| 🛒 상점 | `/shop` `/우편함` |
+| 🛒 상점 | `/shop` `/우편함` (다이아몬드 결제) |
 | 📊 킬 통계 | `/kills` `/top kills\|deaths\|kda\|streak` |
 | 💤 수면 투표 | `/sleepvote yes\|no` (1일 1회) |
-| 📍 웨이포인트 | `/wp add\|list\|tp\|del\|share` |
+| 📍 웨이포인트 | `/wp add\|list\|del\|share` |
 | 💤 AFK | 5분 무활동 → 탭에 `[AFK]` 표시 |
 | 🔖 탭 목록 | `[Xms] [AFK] [칭호] 닉네임` 1초 갱신 |
 | 📢 자동 공지 | 5분 주기 순환 방송 |
@@ -191,7 +190,7 @@ titles.yml          — 칭호 정의
 players.yml         — 플레이어별 칭호
 waypoints.yml       — 웨이포인트
 starterpack.yml     — 스타터팩 수령 기록
-economy.yml         — 잔액
+compensations.yml   — 관리자 보상 이벤트
 waiting_queue.yml   — 대기열 인벤토리 백업 (서버 재시작 대비)
 ```
 

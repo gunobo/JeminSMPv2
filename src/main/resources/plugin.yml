@@ -60,12 +60,6 @@ commands:
   title:
     description: 칭호 관리
     usage: /title <서브커맨드>
-  balance:
-    description: 잔액 확인
-    usage: /balance
-  eco:
-    description: 경제 관리 (관리자)
-    usage: /eco <give|take|set> <플레이어> <금액>
   # 웨이포인트
   wp:
     description: 웨이포인트 관리

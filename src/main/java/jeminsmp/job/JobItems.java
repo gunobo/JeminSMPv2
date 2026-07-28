@@ -19,7 +19,7 @@ import java.util.List;
 public class JobItems {
 
     public static final int JOB_SCROLL_PRICE = 15; // 다이아 가격
-    public static final int JOB_SCROLL_MODEL_DATA = 1001;
+    public static final String JOB_SCROLL_MODEL_KEY = "job_change_scroll";
 
     private static NamespacedKey scrollKey(org.bukkit.plugin.Plugin plugin) {
         return new NamespacedKey(plugin, "job_change_scroll");
@@ -29,9 +29,16 @@ public class JobItems {
         return new NamespacedKey(plugin, "job_skill_item");
     }
 
-    /** 직업 + 스킬 종류 조합마다 다른 아이콘: 2000 + (직업순번+1)*10 + (스킬순번+1) */
-    private static int skillModelData(JobType job, SkillType type) {
-        return 2000 + (job.ordinal() + 1) * 10 + (type.ordinal() + 1);
+    /** 직업 + 스킬 종류 조합마다 다른 아이콘 키. resourcepack의 skill_<직업>_<스킬>.png 파일명과 일치해야 함 */
+    private static String skillModelKey(JobType job, SkillType type) {
+        return "skill_" + job.name().toLowerCase() + "_" + type.name().toLowerCase();
+    }
+
+    /** 1.21.4+ 새 아이템 모델 시스템은 CustomModelData가 정수 하나가 아니라 문자열 리스트 컴포넌트라 이걸로 설정 */
+    private static void setModelKey(ItemMeta meta, String key) {
+        var component = meta.getCustomModelDataComponent();
+        component.setStrings(List.of(key));
+        meta.setCustomModelDataComponent(component);
     }
 
     public static ItemStack createJobChangeScroll(org.bukkit.plugin.Plugin plugin) {
@@ -44,7 +51,7 @@ public class JobItems {
                 Component.text("직업을 다시 선택할 수 있습니다.", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false),
                 Component.text("(레벨/스킬포인트 초기화됨)", NamedTextColor.RED).decoration(TextDecoration.ITALIC, false)
         ));
-        meta.setCustomModelData(JOB_SCROLL_MODEL_DATA);
+        setModelKey(meta, JOB_SCROLL_MODEL_KEY);
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         meta.getPersistentDataContainer().set(scrollKey(plugin), PersistentDataType.BYTE, (byte) 1);
         item.setItemMeta(meta);
@@ -72,13 +79,13 @@ public class JobItems {
     // ── 스킬템 (우클릭: 전환 / 좌클릭: 발동) ──
 
     public static ItemStack createSkillItem(org.bukkit.plugin.Plugin plugin, JobType job, SkillType type) {
-        ItemStack item = new ItemStack(Material.STICK);
+        ItemStack item = new ItemStack(Material.PAPER);
         applySkillType(plugin, item, job, type);
         return item;
     }
 
     public static boolean isSkillItem(org.bukkit.plugin.Plugin plugin, ItemStack item) {
-        if (item == null || item.getType() != Material.STICK || !item.hasItemMeta()) return false;
+        if (item == null || item.getType() != Material.PAPER || !item.hasItemMeta()) return false;
         return item.getItemMeta().getPersistentDataContainer().has(skillItemKey(plugin), PersistentDataType.STRING);
     }
 
@@ -98,7 +105,7 @@ public class JobItems {
                 Component.text("우클릭: 스킬 전환", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false),
                 Component.text("좌클릭: 스킬 사용", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)
         ));
-        meta.setCustomModelData(skillModelData(job, type));
+        setModelKey(meta, skillModelKey(job, type));
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         meta.getPersistentDataContainer().set(skillItemKey(plugin), PersistentDataType.STRING, type.name());
         item.setItemMeta(meta);

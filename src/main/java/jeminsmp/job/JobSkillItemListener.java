@@ -7,6 +7,8 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.player.PlayerAnimationEvent;
+import org.bukkit.event.player.PlayerAnimationType;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
@@ -22,7 +24,8 @@ public class JobSkillItemListener implements Listener {
         this.skillCommand = skillCommand;
     }
 
-    // 우클릭: 스킬 전환 / 좌클릭(빈 공간·블록): 스킬 사용
+    // 우클릭: 스킬 전환 (좌클릭 발동은 onSwing에서 처리 — PlayerInteractEvent의 LEFT_CLICK_AIR는
+    // 클라이언트가 허공 연타 시 매번 안 보내는 경우가 많아서 신뢰 못 함)
     @EventHandler
     public void onInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
@@ -33,20 +36,26 @@ public class JobSkillItemListener implements Listener {
         if (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
             event.setCancelled(true);
             cycle(player, item);
-        } else if (action == Action.LEFT_CLICK_AIR || action == Action.LEFT_CLICK_BLOCK) {
-            event.setCancelled(true);
-            fire(player, item);
         }
     }
 
-    // 좌클릭으로 엔티티를 때렸을 때(공격)도 스킬 발동, 원래 공격 피해는 취소
+    // 좌클릭(팔 휘두름) 감지 — 허공/블록/엔티티 상관없이 항상 옴, 스킬 발동은 여기서만 처리
+    @EventHandler
+    public void onSwing(PlayerAnimationEvent event) {
+        if (event.getAnimationType() != PlayerAnimationType.ARM_SWING) return;
+        Player player = event.getPlayer();
+        ItemStack item = player.getInventory().getItemInMainHand();
+        if (!JobItems.isSkillItem(plugin, item)) return;
+        fire(player, item);
+    }
+
+    // 엔티티를 때렸을 때 원래 공격 피해만 취소 (스킬 발동은 onSwing이 처리)
     @EventHandler(priority = EventPriority.LOWEST)
     public void onAttack(EntityDamageByEntityEvent event) {
         if (!(event.getDamager() instanceof Player player)) return;
         ItemStack item = player.getInventory().getItemInMainHand();
         if (!JobItems.isSkillItem(plugin, item)) return;
         event.setCancelled(true);
-        fire(player, item);
     }
 
     // 죽을 때 스킬템은 드롭 안 되게

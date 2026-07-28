@@ -5,15 +5,16 @@
 resourcepack/
   pack.mcmeta                                          — 팩 메타데이터
   assets/minecraft/
+    items/
+      paper.json                 — 종이 아이템의 모델 분기 (전직의 서 + 스킬템 16개, 건드릴 필요 없음)
     models/item/
-      paper.json                 — 바닐라 종이 모델 override (건드릴 필요 없음)
-      stick.json                 — 바닐라 막대기 모델 override (건드릴 필요 없음)
       job_change_scroll.json     — 전직의 서 전용 모델 (건드릴 필요 없음)
       skill_<직업>_<스킬>.json    — 스킬템 전용 모델, 16개 (건드릴 필요 없음)
     textures/item/
       job_change_scroll.png      — ⭐ 전직의 서 아이콘
       skill_<직업>_<스킬>.png     — ⭐ 스킬템 아이콘, 16개
 ```
+전직의 서와 스킬템 둘 다 베이스 아이템이 **종이(PAPER)**라, 어떤 아이템인지는 `items/paper.json` 안의 `custom_model_data` 문자열 값으로 구분합니다 (`job_change_scroll` 또는 `skill_<직업>_<스킬>`). 1.21.4+ 새 아이템 모델 시스템이라 예전처럼 `models/item/paper.json`에 `overrides` 배열 넣는 방식이 아니라 `items/paper.json`에 `select` 분기로 넣는 방식입니다.
 
 ## 왜 16장이냐면
 스킬템은 **직업 × 스킬종류** 조합마다 완전히 다른 그림입니다 (같은 "딜"이어도 광부의 딜과 전사의 딜은 다른 그림). 4직업 × 4스킬 = 16장.
@@ -45,13 +46,13 @@ resourcepack/
 - 배경: 투명 (PNG 알파 채널)
 - **파일명은 절대 바꾸지 마세요** — 위 표의 정확한 이름으로 덮어쓰기만 하면 됩니다 (`models/item/skill_*.json`이 이 이름을 그대로 참조하고 있음)
 
-스킬템은 하나의 아이템(막대기 기반)이 우클릭할 때마다 해금된 스킬 종류를 순서대로 전환하고, 전환될 때마다 "현재 직업 + 현재 스킬" 조합에 맞는 텍스처로 아이콘이 바뀝니다. 전직하면 같은 스킬 종류라도 새 직업의 아이콘으로 자동 갱신됩니다.
+스킬템은 하나의 아이템(종이 기반)이 우클릭할 때마다 해금된 스킬 종류를 순서대로 전환하고, 전환될 때마다 "현재 직업 + 현재 스킬" 조합에 맞는 텍스처로 아이콘이 바뀝니다. 전직하면 같은 스킬 종류라도 새 직업의 아이콘으로 자동 갱신됩니다.
 
 새 아이템을 더 추가하고 싶으면 같은 패턴으로:
-1. `models/item/<베이스아이템>.json`에 override 추가 (custom_model_data 번호는 겹치지 않게, 지금 1001=전직서, 2011~2044=스킬템 사용 중)
+1. `items/paper.json`의 `cases` 배열에 `{ "when": "고유키", "model": {...} }` 추가 (키는 겹치지 않게, 지금 `job_change_scroll`과 `skill_<직업>_<스킬>` 16개 사용 중)
 2. `models/item/<새모델이름>.json` 생성
 3. `textures/item/<새텍스처>.png` 그리기
-4. 자바 코드(`JobItems.java`)에 `setCustomModelData(번호)` 맞춰서 추가
+4. 자바 코드(`JobItems.java`)에서 `setCustomModelDataComponent()`로 같은 문자열 키 설정
 
 ## 패키징 & 배포 (Pi에서, 레포 클론된 경로)
 ```bash

@@ -1,0 +1,132 @@
+{
+  "model": {
+    "type": "minecraft:select",
+    "property": "minecraft:custom_model_data",
+    "index": 0,
+    "cases": [
+      {
+        "when": "job_change_scroll",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/job_change_scroll"
+        }
+      },
+      {
+        "when": "skill_miner_heal",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/skill_miner_heal"
+        }
+      },
+      {
+        "when": "skill_miner_deal",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/skill_miner_deal"
+        }
+      },
+      {
+        "when": "skill_miner_force",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/skill_miner_force"
+        }
+      },
+      {
+        "when": "skill_miner_move",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/skill_miner_move"
+        }
+      },
+      {
+        "when": "skill_farmer_heal",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/skill_farmer_heal"
+        }
+      },
+      {
+        "when": "skill_farmer_deal",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/skill_farmer_deal"
+        }
+      },
+      {
+        "when": "skill_farmer_force",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/skill_farmer_force"
+        }
+      },
+      {
+        "when": "skill_farmer_move",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/skill_farmer_move"
+        }
+      },
+      {
+        "when": "skill_warrior_heal",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/skill_warrior_heal"
+        }
+      },
+      {
+        "when": "skill_warrior_deal",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/skill_warrior_deal"
+        }
+      },
+      {
+        "when": "skill_warrior_force",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/skill_warrior_force"
+        }
+      },
+      {
+        "when": "skill_warrior_move",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/skill_warrior_move"
+        }
+      },
+      {
+        "when": "skill_fisher_heal",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/skill_fisher_heal"
+        }
+      },
+      {
+        "when": "skill_fisher_deal",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/skill_fisher_deal"
+        }
+      },
+      {
+        "when": "skill_fisher_force",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/skill_fisher_force"
+        }
+      },
+      {
+        "when": "skill_fisher_move",
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/skill_fisher_move"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "minecraft:item/paper"
+    }
+  }
+}

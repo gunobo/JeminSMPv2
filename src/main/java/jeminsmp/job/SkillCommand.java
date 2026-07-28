@@ -1,17 +1,11 @@
 package jeminsmp.job;
 
 import jeminsmp.JeminSMPPlugin;
-import org.bukkit.Location;
-import org.bukkit.attribute.Attribute;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
-import org.bukkit.util.Vector;
 
 import java.util.List;
 import java.util.UUID;
@@ -19,11 +13,11 @@ import java.util.UUID;
 public class SkillCommand implements CommandExecutor, TabCompleter {
 
     private final JeminSMPPlugin plugin;
-
-    private static final double FORCE_RADIUS = 4.0;
+    private final JobSkills skills;
 
     public SkillCommand(JeminSMPPlugin plugin) {
         this.plugin = plugin;
+        this.skills = new JobSkills(plugin);
     }
 
     @Override
@@ -54,47 +48,8 @@ public class SkillCommand implements CommandExecutor, TabCompleter {
         long remaining = jm.getCooldownRemainingSeconds(uuid, type);
         if (remaining > 0) { player.sendMessage("§c쿨다운 중입니다. §e" + remaining + "초 §c남음."); return; }
 
-        switch (type) {
-            case HEAL -> useHeal(player, skillLevel);
-            case DEAL -> useDeal(player, skillLevel);
-            case FORCE -> useForce(player, skillLevel);
-        }
-
+        skills.use(player, d.job, type, skillLevel);
         jm.setCooldown(uuid, type, JobManager.cooldownSeconds(skillLevel));
-    }
-
-    private void useHeal(Player player, int level) {
-        double amount = switch (level) { case 1 -> 6; case 2 -> 10; default -> 14; };
-        var maxHealthAttr = player.getAttribute(Attribute.MAX_HEALTH);
-        double max = maxHealthAttr != null ? maxHealthAttr.getValue() : 20.0;
-        player.setHealth(Math.min(max, player.getHealth() + amount));
-        player.sendMessage("§d✚ 힐 사용! §7체력을 " + (int) amount + " 회복했습니다.");
-    }
-
-    private void useDeal(Player player, int level) {
-        int seconds = switch (level) { case 1 -> 5; case 2 -> 8; default -> 8; };
-        int amplifier = level >= 3 ? 1 : 0;
-        player.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, seconds * 20, amplifier, false, true, true));
-        player.sendMessage("§c⚔ 딜 사용! §7" + seconds + "초 동안 공격력이 증가합니다.");
-    }
-
-    private void useForce(Player player, int level) {
-        int seconds = switch (level) { case 1 -> 3; case 2 -> 4; default -> 5; };
-        Location loc = player.getLocation();
-        int hit = 0;
-        for (var entity : player.getWorld().getNearbyEntities(loc, FORCE_RADIUS, FORCE_RADIUS, FORCE_RADIUS)) {
-            if (entity.equals(player)) continue;
-            if (!(entity instanceof LivingEntity target)) continue;
-            target.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, seconds * 20, 1, false, true, true));
-            target.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, seconds * 20, 0, false, true, true));
-            Vector push = target.getLocation().toVector().subtract(loc.toVector());
-            if (push.lengthSquared() > 0) {
-                push.normalize().multiply(0.8).setY(0.3);
-                target.setVelocity(target.getVelocity().add(push));
-            }
-            hit++;
-        }
-        player.sendMessage("§b☠ 포스 사용! §7주변 " + hit + "명을 밀치고 둔화시켰습니다.");
     }
 
     private void handleInvest(Player player, String skillArg) {

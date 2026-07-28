@@ -97,20 +97,24 @@ public class JobSkills {
                 player.sendMessage("§6⛏ 낙석! §7주변 적에게 피해와 둔화를 입혔습니다.");
             }
             case FORCE -> {
+                // 발로란트 진탕(콘커스) 느낌: 넉업 + 강한 슬로우 + 화면 뿌옇게(Darkness) + 현기증
                 int seconds = switch (level) { case 1 -> 3; case 2 -> 4; default -> 5; };
                 double launch = switch (level) { case 1 -> 0.5; case 2 -> 0.7; default -> 0.9; };
+                int slowAmp = switch (level) { case 1 -> 1; case 2 -> 2; default -> 3; };
                 int hit = 0;
                 for (LivingEntity e : nearbyEnemies(player, 4.0)) {
                     Vector vel = e.getVelocity();
                     vel.setY(Math.max(vel.getY(), launch));
                     e.setVelocity(vel);
                     effect(e, PotionEffectType.NAUSEA, seconds, 0);
+                    effect(e, PotionEffectType.SLOWNESS, seconds, slowAmp);
+                    effect(e, PotionEffectType.DARKNESS, seconds, 0);
                     blockParticle(e.getLocation(), Material.STONE, 20);
                     hit++;
                 }
                 blockParticle(player.getLocation(), Material.STONE, 30);
                 sound(player, Sound.ENTITY_GENERIC_EXPLODE, 1f, 0.7f);
-                player.sendMessage("§8⛏ 지진! §7주변 적 " + hit + "명을 뒤흔들어 띄워 올렸습니다.");
+                player.sendMessage("§8⛏ 지진! §7주변 적 " + hit + "명을 진탕시켰습니다 (둔화+시야 뿌옇게).");
             }
         }
     }

@@ -53,14 +53,21 @@ resourcepack/
 3. `textures/item/<새텍스처>.png` 그리기
 4. 자바 코드(`JobItems.java`)에 `setCustomModelData(번호)` 맞춰서 추가
 
-## 패키징
+## 패키징 & 배포 (Pi에서, 레포 클론된 경로)
 ```bash
 cd resourcepack
-zip -r ../jeminsmp-resourcepack.zip .
+zip -r ../resourcepack-dist/jeminsmp-resourcepack.zip .
+cd ..
+docker compose --env-file .env up -d resourcepack
 ```
+`resourcepack-dist/`를 nginx 컨테이너가 정적으로 서빙합니다 (본서버 compose에서만 띄우면 됨 — 테스트 서버도 같은 URL 씀). 접속 주소는 `http://mcv2.imjemin.co.kr:8080/jeminsmp-resourcepack.zip` (포트는 `.env`의 `RESOURCEPACK_PORT`로 바꿀 수 있음, 기본 8080). 라우터에서 8080 포트포워딩도 해줘야 외부에서 접근 가능합니다.
 
-## 서버 적용 방법 (둘 중 하나)
-1. **자동 강제 적용** — 어딘가(GitHub Releases, 개인 웹서버 등)에 zip을 올리고 URL을 받은 다음, `server.properties`의 `resource-pack`/`resource-pack-sha1`에 설정 (SHA1은 `shasum jeminsmp-resourcepack.zip`으로 구함)
-2. **플러그인에서 코드로 적용** — 플레이어 접속 시 `Player#setResourcePack(url, hash)` 호출. 더 세밀한 제어(필수/선택, 안내 메시지) 가능. 팩을 실제로 호스팅할 URL이 생기면 이 방식으로 붙여드릴 수 있음.
+## 서버 적용
+`config.yml`의 `resourcepack.url`에 위 URL을 넣으면 플레이어 접속 시 `PlayerJoinEvent`에서 자동으로 `Player#setResourcePack(url)`을 호출해 적용합니다 (`ResourcePackListener.java`). **이미 떠 있는 서버는 `config.yml`이 이미 생성돼 있어서 새 기본값이 자동으로 안 들어갑니다** — `data/plugins/JeminSMPv2/config.yml`과 `data-test/plugins/JeminSMPv2/config.yml`에 아래 내용을 직접 추가해야 합니다:
+```yaml
+resourcepack:
+  url: "http://mcv2.imjemin.co.kr:8080/jeminsmp-resourcepack.zip"
+```
+텍스처를 새로 그려서 zip을 다시 만들 때마다 위 패키징 명령만 다시 실행하면 됩니다 (URL은 그대로, 파일만 갱신).
 
 pack.mcmeta의 `pack_format` 값(현재 34)은 실제 서버 버전에 안 맞으면 마인크래프트가 "호환 안 될 수도 있음" 경고만 뜨고 그냥 작동은 합니다. 정확한 값은 접속해서 경고 뜨는지 보고 조정하면 됩니다.

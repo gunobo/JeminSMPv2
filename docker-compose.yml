@@ -40,6 +40,18 @@ services:
     networks:
       - jeminsmp-net
 
+  # 리소스팩 zip을 정적으로 서빙 (본서버 compose에서만 띄우면 됨, 테스트 서버도 같은 URL을 씀).
+  # resourcepack-dist/ 안에 zip을 넣고 접속해서 http://<주소>:${RESOURCEPACK_PORT:-8080}/<zip 파일명> 으로 접근
+  resourcepack:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "${RESOURCEPACK_PORT:-8080}:80"
+    volumes:
+      - ./resourcepack-dist:/usr/share/nginx/html:ro
+    networks:
+      - jeminsmp-net
+
   mysql:
     image: mysql:8.0
     restart: unless-stopped

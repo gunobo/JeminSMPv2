@@ -33,6 +33,7 @@ import jeminsmp.job.JobManager;
 import jeminsmp.job.JobListener;
 import jeminsmp.job.JobItemListener;
 import jeminsmp.job.JobJoinListener;
+import jeminsmp.resourcepack.ResourcePackListener;
 import jeminsmp.job.JobSkillItemListener;
 import jeminsmp.job.JobCommand;
 import jeminsmp.job.SkillCommand;
@@ -227,6 +228,9 @@ public class JeminSMPPlugin extends JavaPlugin {
         var waypointCmd = new WaypointCommand(this);
         getCommand("wp").setExecutor(waypointCmd);
         getCommand("wp").setTabCompleter(waypointCmd);
+
+        // 리소스팩 자동 적용
+        getServer().getPluginManager().registerEvents(new ResourcePackListener(this), this);
 
         // Job & Skill
         getServer().getPluginManager().registerEvents(new JobListener(this), this);

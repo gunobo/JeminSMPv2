@@ -12,3 +12,4 @@ mysql-data-test/
 
 # 빌드된 리소스팩 zip (소스인 resourcepack/ 폴더만 git에 올림)
 *.zip
+resourcepack-dist/

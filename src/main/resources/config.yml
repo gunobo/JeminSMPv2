@@ -60,6 +60,10 @@ google:
     sync-interval-minutes: 5 # 자동 동기화 주기 (분)
     service-account-file: "service-account.json" # 시트 자동 채우기용 서비스 계정 JSON
 
+# 리소스팩 (직업 스킬템 아이콘 등). 비워두면 적용 안 함
+resourcepack:
+  url: ""   # 예: http://mcv2.imjemin.co.kr:8080/jeminsmp-resourcepack.zip
+
 # SMP 설정
 smp:
   world-name: "smp_world"

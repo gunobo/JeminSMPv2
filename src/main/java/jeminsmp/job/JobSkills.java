@@ -129,7 +129,7 @@ public class JobSkills {
                 }
                 blockParticle(player.getLocation(), Material.STONE, 30);
                 sound(player, Sound.ENTITY_GENERIC_EXPLODE, 1f, 0.7f);
-                player.sendMessage("§8⛏ 지진! §7주변 적 " + hit + "명을 진탕시켰습니다 (둔화+시야 뿌옇게).");
+                player.sendMessage("§8⛏ 지진! §7주변 적 " + hit + "개체를 진탕시켰습니다 (둔화+시야 뿌옇게).");
             }
             case MOVE -> {
                 // 굴착 돌진: 바라보는 방향으로 3x3 단면 터널을 뚫으며 돌진
@@ -293,7 +293,7 @@ public class JobSkills {
                 player.setVelocity(player.getVelocity().add(dash));
                 sound(player, Sound.ENTITY_IRON_GOLEM_ATTACK, 1f, 1.2f);
                 sound(player, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1f, 0.8f);
-                player.sendMessage("§c⚔ 돌격! §7전방으로 돌진하며 " + hit + "명에게 " + (int) dmg + " 피해.");
+                player.sendMessage("§c⚔ 돌격! §7전방으로 돌진하며 " + hit + "개체에게 " + (int) dmg + " 피해.");
             }
             case FORCE -> {
                 int seconds = switch (level) { case 1 -> 3; case 2 -> 4; default -> 5; };
@@ -336,7 +336,7 @@ public class JobSkills {
                         e.setVelocity(e.getVelocity().add(push));
                         hit++;
                     }
-                    if (hit > 0) player.sendMessage("§4⚔ 충격파! §7" + hit + "명에게 " + (int) dmg + " 피해 + 넉백.");
+                    if (hit > 0) player.sendMessage("§4⚔ 충격파! §7" + hit + "개체에게 " + (int) dmg + " 피해 + 넉백.");
                 }, 14L);
             }
         }

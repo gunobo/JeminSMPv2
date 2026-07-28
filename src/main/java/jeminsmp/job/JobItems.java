@@ -76,7 +76,7 @@ public class JobItems {
         player.sendMessage(msg);
     }
 
-    // ── 스킬템 (우클릭: 전환 / 좌클릭: 발동) ──
+    // ── 스킬템 (스킬마다 별도 아이템, 핫바 슬롯 전환으로 바꿔 씀 / 좌클릭·우클릭: 발동) ──
 
     public static ItemStack createSkillItem(org.bukkit.plugin.Plugin plugin, JobType job, SkillType type) {
         ItemStack item = new ItemStack(Material.PAPER);
@@ -95,15 +95,14 @@ public class JobItems {
         return name == null ? null : SkillType.fromString(name);
     }
 
-    /** 같은 ItemStack 인스턴스에 타입/아이콘/이름을 다시 씀 (전환용). 직업+스킬 조합마다 아이콘이 다름 */
+    /** 같은 ItemStack 인스턴스에 아이콘/이름을 다시 씀 (전직해서 직업이 바뀌었을 때 라벨 갱신용). 타입 자체는 안 바뀜 */
     public static void applySkillType(org.bukkit.plugin.Plugin plugin, ItemStack item, JobType job, SkillType type) {
         ItemMeta meta = item.getItemMeta();
         meta.displayName(Component.text("⚡ " + job.display() + " · " + type.display() + " 스킬템",
                         NamedTextColor.AQUA, TextDecoration.BOLD)
                 .decoration(TextDecoration.ITALIC, false));
         meta.lore(List.of(
-                Component.text("우클릭: 스킬 전환", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false),
-                Component.text("좌클릭: 스킬 사용", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)
+                Component.text("좌클릭 또는 우클릭: 스킬 사용", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)
         ));
         setModelKey(meta, skillModelKey(job, type));
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
@@ -111,11 +110,21 @@ public class JobItems {
         item.setItemMeta(meta);
     }
 
-    /** 인벤토리에 스킬템이 이미 있는지(칸 인덱스, 없으면 -1) */
+    /** 인벤토리에 스킬템이 하나라도 있는지(칸 인덱스, 없으면 -1) */
     public static int findSkillItemSlot(org.bukkit.plugin.Plugin plugin, Player player) {
         var inv = player.getInventory();
         for (int i = 0; i < inv.getSize(); i++) {
             if (isSkillItem(plugin, inv.getItem(i))) return i;
+        }
+        return -1;
+    }
+
+    /** 특정 스킬 종류의 스킬템이 인벤토리에 있는지(칸 인덱스, 없으면 -1) */
+    public static int findSkillItemSlot(org.bukkit.plugin.Plugin plugin, Player player, SkillType type) {
+        var inv = player.getInventory();
+        for (int i = 0; i < inv.getSize(); i++) {
+            ItemStack item = inv.getItem(i);
+            if (isSkillItem(plugin, item) && getSkillItemType(plugin, item) == type) return i;
         }
         return -1;
     }

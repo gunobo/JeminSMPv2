@@ -357,7 +357,11 @@ public class JobSkills {
             case DEAL -> {
                 double dmg = switch (level) { case 1 -> 5; case 2 -> 7; default -> 9; };
                 LivingEntity target = nearestEnemy(player, 6.0);
-                if (target == null) { player.sendMessage("§c근처에 적이 없습니다."); return; }
+                if (target == null) {
+                    sound(player, Sound.ITEM_TRIDENT_HIT, 0.6f, 0.7f);
+                    player.sendMessage("§c🎣 작살! §7근처에 적이 없어 허공에 던졌습니다.");
+                    return;
+                }
                 target.damage(dmg, player);
                 Vector pull = player.getLocation().toVector().subtract(target.getLocation().toVector());
                 if (pull.lengthSquared() > 0) pull.normalize().multiply(0.9).setY(0.2);

@@ -132,20 +132,43 @@ public class JobSkills {
                 player.sendMessage("§8⛏ 지진! §7주변 적 " + hit + "명을 진탕시켰습니다 (둔화+시야 뿌옇게).");
             }
             case MOVE -> {
-                // 굴착 돌진: 바라보는 방향으로 짧은 터널을 뚫으며 돌진
+                // 굴착 돌진: 바라보는 방향으로 3x3 단면 터널을 뚫으며 돌진
                 int length = switch (level) { case 1 -> 3; case 2 -> 5; default -> 7; };
                 double dashPower = switch (level) { case 1 -> 1.0; case 2 -> 1.2; default -> 1.4; };
 
                 Vector dir = player.getLocation().getDirection().normalize();
-                Location cursor = player.getEyeLocation().clone();
+
+                // 3x3 단면은 월드 축에 맞춰야 대각선 방향에서도 틈 없이 뚫림 (연속 벡터로 계산하면 회전각에 따라 구멍이 생김)
+                double ax = Math.abs(dir.getX()), ay = Math.abs(dir.getY()), az = Math.abs(dir.getZ());
+                Vector primary, spanA, spanB;
+                if (ax >= ay && ax >= az) {
+                    primary = new Vector(Math.signum(dir.getX()), 0, 0);
+                    spanA = new Vector(0, 1, 0);
+                    spanB = new Vector(0, 0, 1);
+                } else if (ay >= ax && ay >= az) {
+                    primary = new Vector(0, Math.signum(dir.getY()), 0);
+                    spanA = new Vector(1, 0, 0);
+                    spanB = new Vector(0, 0, 1);
+                } else {
+                    primary = new Vector(0, 0, Math.signum(dir.getZ()));
+                    spanA = new Vector(1, 0, 0);
+                    spanB = new Vector(0, 1, 0);
+                }
+
+                Location origin = player.getEyeLocation();
                 int broken = 0;
-                for (int i = 0; i < length; i++) {
-                    cursor.add(dir);
-                    var block = cursor.getBlock();
-                    if (isTunnelable(block)) {
-                        blockParticle(block.getLocation().add(0.5, 0.5, 0.5), block.getType(), 8);
-                        block.setType(Material.AIR);
-                        broken++;
+                for (int i = 1; i <= length; i++) {
+                    Location center = origin.clone().add(primary.clone().multiply(i));
+                    for (int a = -1; a <= 1; a++) {
+                        for (int b = -1; b <= 1; b++) {
+                            Location loc = center.clone().add(spanA.clone().multiply(a)).add(spanB.clone().multiply(b));
+                            var block = loc.getBlock();
+                            if (isTunnelable(block)) {
+                                blockParticle(block.getLocation().add(0.5, 0.5, 0.5), block.getType(), 4);
+                                block.setType(Material.AIR);
+                                broken++;
+                            }
+                        }
                     }
                 }
                 Vector dash = dir.clone().multiply(dashPower);

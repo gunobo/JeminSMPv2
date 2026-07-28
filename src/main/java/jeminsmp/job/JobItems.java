@@ -49,7 +49,7 @@ public class JobItems {
         meta.lore(List.of(
                 Component.text("우클릭하여 사용", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false),
                 Component.text("직업을 다시 선택할 수 있습니다.", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false),
-                Component.text("(레벨/스킬포인트 초기화됨)", NamedTextColor.RED).decoration(TextDecoration.ITALIC, false)
+                Component.text("(직업별로 레벨이 따로 저장돼요)", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)
         ));
         setModelKey(meta, JOB_SCROLL_MODEL_KEY);
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);

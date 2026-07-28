@@ -81,7 +81,7 @@ public class JobCommand implements CommandExecutor, TabCompleter {
             player.sendMessage("§a" + job.display() + " §a직업을 선택했습니다!");
         } else {
             player.sendMessage("§a직업을 " + current.display() + " §7→ §a" + job.display()
-                    + " §a(으)로 변경했습니다. §7(레벨/스킬 초기화됨)");
+                    + " §a(으)로 변경했습니다. §7(§f" + current.display() + "§7 레벨은 저장되어 나중에 돌아오면 유지됩니다)");
         }
     }
 
@@ -130,10 +130,10 @@ public class JobCommand implements CommandExecutor, TabCompleter {
             plugin.getJobManager().selectJob(uuid, job);
             plugin.getJobSkillItemListener().onJobChanged(player);
             player.sendMessage("§a직업을 " + current.display() + " §7→ §a" + job.display()
-                    + " §a(으)로 변경했습니다. §7(레벨/스킬 초기화됨)");
+                    + " §a(으)로 변경했습니다. §7(§f" + current.display() + "§7 레벨은 저장되어 나중에 돌아오면 유지됩니다)");
         } else {
             pendingReselect.put(uuid, job);
-            player.sendMessage("§c전직하면 현재 " + current.display() + " 직업의 레벨·스킬포인트가 §l전부 초기화§r§c됩니다.");
+            player.sendMessage("§e" + current.display() + " §7→ §e" + job.display() + " §7로 전직합니다. (각 직업 레벨은 따로 저장되어 있어 안 사라짐)");
             player.sendMessage("§e정말로 변경하려면 같은 명령어를 §f한 번 더§e 입력하세요: §7/job select " + args[1]);
         }
     }

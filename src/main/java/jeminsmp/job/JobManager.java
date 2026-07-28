@@ -24,6 +24,9 @@ public class JobManager {
         public JobType job;
         public int level = 1;
         public long exp = 0;
+        // 현재 선택 안 된 다른 직업들의 저장된 진행도 (전직해도 안 사라지게)
+        final Map<JobType, Integer> savedLevel = new EnumMap<>(JobType.class);
+        final Map<JobType, Long> savedExp = new EnumMap<>(JobType.class);
 
         public int skillLevel(SkillType type) {
             if (type == SkillType.MOVE) {
@@ -73,6 +76,15 @@ public class JobManager {
                 d.job = jobStr == null ? null : JobType.fromString(jobStr);
                 d.level = cfg.getInt("players." + uuidStr + ".level", 1);
                 d.exp = cfg.getLong("players." + uuidStr + ".exp", 0);
+                var savedSec = cfg.getConfigurationSection("players." + uuidStr + ".saved");
+                if (savedSec != null) {
+                    for (String jobKey : savedSec.getKeys(false)) {
+                        JobType jt = JobType.fromString(jobKey);
+                        if (jt == null) continue;
+                        d.savedLevel.put(jt, cfg.getInt("players." + uuidStr + ".saved." + jobKey + ".level", 1));
+                        d.savedExp.put(jt, cfg.getLong("players." + uuidStr + ".saved." + jobKey + ".exp", 0));
+                    }
+                }
                 data.put(uuid, d);
             } catch (Exception ignored) {}
         }
@@ -86,6 +98,11 @@ public class JobManager {
             cfg.set(path + ".job", d.job == null ? null : d.job.name());
             cfg.set(path + ".level", d.level);
             cfg.set(path + ".exp", d.exp);
+            cfg.set(path + ".saved", null);
+            for (var se : d.savedLevel.entrySet()) {
+                cfg.set(path + ".saved." + se.getKey().name() + ".level", se.getValue());
+                cfg.set(path + ".saved." + se.getKey().name() + ".exp", d.savedExp.getOrDefault(se.getKey(), 0L));
+            }
         }
         try { cfg.save(file); }
         catch (IOException e) { plugin.getLogger().warning("jobs.yml 저장 실패: " + e.getMessage()); }
@@ -100,12 +117,16 @@ public class JobManager {
         return d == null ? null : d.job;
     }
 
-    // ── 직업 선택 (전직 시 초기화) ──
+    // ── 직업 선택 (직업별 레벨/경험치는 따로 저장되어 전직해도 유지됨) ──
     public void selectJob(UUID uuid, JobType job) {
         JobData d = getData(uuid);
+        if (d.job != null) {
+            d.savedLevel.put(d.job, d.level);
+            d.savedExp.put(d.job, d.exp);
+        }
         d.job = job;
-        d.level = 1;
-        d.exp = 0;
+        d.level = d.savedLevel.getOrDefault(job, 1);
+        d.exp = d.savedExp.getOrDefault(job, 0L);
         save();
     }
 

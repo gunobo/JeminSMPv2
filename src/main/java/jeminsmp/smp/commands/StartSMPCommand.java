@@ -44,13 +44,6 @@ public class StartSMPCommand implements CommandExecutor {
 
         sender.sendMessage("§eSMP를 시작합니다... (데이터 초기화: " + (resetData ? "§a예" : "§c아니오") + "§e)");
 
-        // 시즌 자동 시작 (기존 시즌 종료 후 새 시즌)
-        var seasonCmd = plugin.getSeasonCommand();
-        if (seasonCmd != null) {
-            var sm = plugin.getSeasonManager();
-            seasonCmd.doStart(sm, null); // 이름은 자동 (시즌 N)
-        }
-
         // 데이터 초기화
         if (resetData) {
             plugin.getKillsManager().resetAll();

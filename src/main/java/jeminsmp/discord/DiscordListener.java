@@ -122,13 +122,6 @@ public class DiscordListener extends ListenerAdapter {
                 handleOpenNow(event, false);
                 return;
             }
-            if (withoutPrefix.startsWith("season") || withoutPrefix.startsWith("시즌")) {
-                String rest = withoutPrefix.startsWith("season")
-                        ? withoutPrefix.substring("season".length()).trim()
-                        : withoutPrefix.substring("시즌".length()).trim();
-                handleSeason(event, rest);
-                return;
-            }
             if (withoutPrefix.equalsIgnoreCase("startsmp") || withoutPrefix.startsWith("startsmp ")) {
                 handleStartSmp(event, withoutPrefix.substring("startsmp".length()).trim());
                 return;
@@ -1430,55 +1423,6 @@ public class DiscordListener extends ListenerAdapter {
         if (adminRoleId.isBlank() || adminRoleId.equals("YOUR_ADMIN_ROLE_ID_HERE"))
             return member.isOwner();
         return member.getRoles().stream().anyMatch(role -> role.getId().equals(adminRoleId));
-    }
-
-    // ── !season ──
-    private void handleSeason(MessageReceivedEvent event, String args) {
-        if (!hasAdminRole(event.getMember())) {
-            // 일반 조회는 누구나 가능
-            if (args.isBlank() || args.equalsIgnoreCase("info") || args.equalsIgnoreCase("top")) {
-                var sm = plugin.getSeasonManager();
-                if (sm == null) { event.getChannel().sendMessage("❌ 시즌 매니저 없음").queue(); return; }
-                if (!sm.isActive()) {
-                    event.getChannel().sendMessage("📋 현재 진행 중인 시즌이 없습니다.").queue();
-                } else {
-                    long days = (System.currentTimeMillis() - sm.getStartedAt()) / 86400000L;
-                    event.getChannel().sendMessage(
-                            "🏆 **" + sm.getCurrentName() + "** 진행 중 (" + days + "일 경과)").queue();
-                }
-                return;
-            }
-            event.getChannel().sendMessage("❌ 관리자 전용 명령어입니다.").queue();
-            return;
-        }
-
-        var sm = plugin.getSeasonManager();
-        var seasonCmd = plugin.getSeasonCommand();
-        if (sm == null || seasonCmd == null) { event.getChannel().sendMessage("❌ 시즌 매니저 없음").queue(); return; }
-
-        if (args.isBlank() || args.equalsIgnoreCase("info")) {
-            if (!sm.isActive()) {
-                event.getChannel().sendMessage("📋 현재 진행 중인 시즌이 없습니다.").queue();
-            } else {
-                long days = (System.currentTimeMillis() - sm.getStartedAt()) / 86400000L;
-                event.getChannel().sendMessage(
-                        "🏆 **" + sm.getCurrentName() + "** 진행 중 (" + days + "일 경과)").queue();
-            }
-        } else if (args.equalsIgnoreCase("end")) {
-            if (!sm.isActive()) { event.getChannel().sendMessage("❌ 진행 중인 시즌이 없습니다.").queue(); return; }
-            String ending = sm.getCurrentName();
-            Bukkit.getScheduler().runTask(plugin, () -> seasonCmd.doEnd(sm));
-            event.getChannel().sendMessage("🏁 **" + ending + "** 종료 처리 중...").queue();
-        } else {
-            // !season start [이름] or !season 시즌1
-            String name = args.startsWith("start") ? args.substring("start".length()).trim() : args;
-            if (name.isBlank()) name = null;
-            final String finalName = name;
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                seasonCmd.doStart(sm, finalName);
-                event.getChannel().sendMessage("✅ **" + sm.getCurrentName() + "** 시작!").queue();
-            });
-        }
     }
 
     // ── !startsmp [시즌이름] ──

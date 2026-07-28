@@ -51,13 +51,6 @@ import jeminsmp.letter.LetterManager;
 import jeminsmp.team.mission.TeamMissionListener;
 import jeminsmp.team.mission.TeamMissionManager;
 import jeminsmp.leaderboard.LeaderboardCommand;
-import jeminsmp.season.SeasonCommand;
-import jeminsmp.season.SeasonJoinListener;
-import jeminsmp.season.SeasonManager;
-import jeminsmp.season.SeasonRewardManager;
-import jeminsmp.mathquiz.MathQuizCommand;
-import jeminsmp.mathquiz.MathQuizListener;
-import jeminsmp.mathquiz.MathQuizManager;
 import jeminsmp.trade.TradeCommand;
 import jeminsmp.trade.TradeListener;
 import jeminsmp.trade.TradeManager;
@@ -117,10 +110,6 @@ public class JeminSMPPlugin extends JavaPlugin {
     private TeamMissionManager teamMissionManager;
     private LetterManager letterManager;
     private LastWillManager lastWillManager;
-    private SeasonManager seasonManager;
-    private SeasonRewardManager seasonRewardManager;
-    private SeasonCommand seasonCommand;
-    private MathQuizManager mathQuizManager;
     private TradeManager tradeManager;
     private DiscordBot discordBot;
     private UuidMigrationManager uuidMigrationManager;
@@ -166,9 +155,6 @@ public class JeminSMPPlugin extends JavaPlugin {
         teamMissionManager = new TeamMissionManager(this);
         letterManager = new LetterManager(this);
         lastWillManager = new LastWillManager(this);
-        seasonManager = new SeasonManager(this);
-        seasonRewardManager = new SeasonRewardManager(this);
-        mathQuizManager = new MathQuizManager(this);
         tradeManager = new TradeManager(this);
         uuidMigrationManager = new UuidMigrationManager(this);
         uuidCacheDb  = new UuidCacheDb(this);
@@ -245,18 +231,6 @@ public class JeminSMPPlugin extends JavaPlugin {
         getCommand("거래").setExecutor(tradeCmd);
         getCommand("거래").setTabCompleter(tradeCmd);
 
-        // MathQuiz
-        getServer().getPluginManager().registerEvents(new MathQuizListener(this), this);
-        var mathQuizCmd = new MathQuizCommand(this);
-        getCommand("mathquiz").setExecutor(mathQuizCmd);
-        getCommand("mathquiz").setTabCompleter(mathQuizCmd);
-
-        // Season
-        seasonCommand = new SeasonCommand(this);
-        getCommand("season").setExecutor(seasonCommand);
-        getCommand("season").setTabCompleter(seasonCommand);
-        getServer().getPluginManager().registerEvents(new SeasonJoinListener(this), this);
-
         // Leaderboard
         var leaderboardCmd = new LeaderboardCommand(this);
         getCommand("top").setExecutor(leaderboardCmd);
@@ -329,17 +303,12 @@ public class JeminSMPPlugin extends JavaPlugin {
             consoleLogHandler.close();
         }
         if (uuidCacheDb != null) uuidCacheDb.close();
-        if (mathQuizManager != null) mathQuizManager.shutdown();
         getLogger().info("jeminSMPv1 비활성화 완료.");
     }
 
     public CombatManager getCombatManager() { return combatManager; }
     public HomeManager getHomeManager() { return homeManager; }
     public KillsManager getKillsManager() { return killsManager; }
-    public SeasonManager getSeasonManager() { return seasonManager; }
-    public SeasonRewardManager getSeasonRewardManager() { return seasonRewardManager; }
-    public SeasonCommand getSeasonCommand() { return seasonCommand; }
-    public MathQuizManager getMathQuizManager() { return mathQuizManager; }
     public TradeManager getTradeManager() { return tradeManager; }
     public NickManager getNickManager() { return nickManager; }
     public ShopManager getShopManager() { return shopManager; }

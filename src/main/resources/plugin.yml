@@ -78,14 +78,6 @@ commands:
   거래:
     description: 플레이어 간 아이템 거래
     usage: /거래 <플레이어> | /거래 수락/거절/취소
-  # 수학 퀴즈
-  mathquiz:
-    description: 수학 퀴즈 관리 (관리자)
-    usage: /mathquiz [start|stop|status|reload]
-  # 시즌
-  season:
-    description: 시즌 정보 및 관리
-    usage: /season [info|start <이름>|end|top|history]
   # 스타터팩
   스타터팩:
     description: 스타터팩 지급 (구운소고기 64개)

@@ -1,0 +1,44 @@
+services:
+  mc:
+    image: itzg/minecraft-server:latest
+    container_name: jeminsmp-mc
+    restart: unless-stopped
+    tty: true
+    stdin_open: true
+    environment:
+      EULA: "TRUE"
+      TYPE: "PAPER"
+      VERSION: "${MC_VERSION:-1.21.11}"
+      MEMORY: "${MC_MEMORY:-4G}"
+      TZ: "Asia/Seoul"
+      ENABLE_RCON: "true"
+      RCON_PASSWORD: "${RCON_PASSWORD}"
+      SERVER_NAME: "jeminSMPv2"
+    ports:
+      - "25565:25565"
+    volumes:
+      - ./data:/data
+      - ./target:/plugins-build:ro   # mvn package 결과물(jar)이 쌓이는 곳, 아래 plugins 로 수동 복사해서 씀
+    depends_on:
+      - mysql
+    networks:
+      - jeminsmp-net
+
+  mysql:
+    image: mysql:8.0
+    container_name: jeminsmp-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+      MYSQL_DATABASE: "${MYSQL_DATABASE:-jeminsmpv2}"
+      MYSQL_USER: "${MYSQL_USER:-jeminsmpv2}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
+    volumes:
+      - ./mysql-data:/var/lib/mysql
+    networks:
+      - jeminsmp-net
+    # 외부에 포트를 열 필요가 없으면 ports는 비워둔 채로 (mc 컨테이너는 네트워크 내부에서 mysql:3306 으로 접근)
+
+networks:
+  jeminsmp-net:
+    driver: bridge

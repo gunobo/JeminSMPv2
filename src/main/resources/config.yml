@@ -1,0 +1,85 @@
+# UUID/스킨 캐시 DB 설정 (docker-compose의 mysql 서비스)
+database:
+  host: mysql
+  port: 3306
+  name: jeminsmpv2
+  user: jeminsmpv2
+  password: "CHANGE_ME"
+
+# Discord 봇 설정
+discord:
+  enabled: true
+  bot-token: "CHANGE_ME"
+  admin-role-id: "CHANGE_ME"
+  linked-role-id: ""   # 마크 연동 시 자동 부여할 디스코드 역할 ID (비워두면 역할 부여 안 함)
+  command-prefix: "!"
+  console-log-level: "WARNING"
+  console-flush-interval-ticks: 100
+
+  channels:
+    events: "CHANGE_ME"
+    console: "CHANGE_ME"
+
+  log:
+    join: true
+    quit: true
+    chat: true
+    death: true
+    advancement: true
+    server-start: true
+    server-stop: true
+
+# 운영 스케줄 설정
+schedule:
+  enabled: false           # true 로 설정하면 아래 slots 기준으로 입장 제한
+  timezone: "Asia/Seoul"
+  slots:
+    # 예시: 평일 18:00~23:00, 주말 14:00~24:00
+    # - days: "평일"
+    #   start: "18:00"
+    #   end: "23:00"
+    # - days: "주말"
+    #   start: "14:00"
+    #   end: "24:00"
+
+# 경고/징계 설정
+warn:
+  auto-punish-count: 3   # 경고 N회 누적 시 자동으로 대기열 징계
+
+# Google Sheets 스케줄 연동 (선택)
+google:
+  sheets:
+    enabled: false # true 로 바꾸면 자동 동기화 시작
+    api-key: "CHANGE_ME" # Google Cloud API 키 (Sheets API v4 활성화 필요)
+    sheet-id: "CHANGE_ME" # 스프레드시트 URL의 /d/<ID>/ 부분
+    range: "B2:J10" # 그리드 형식 범위 (B=요일, C~J=시간대)
+    sync-interval-minutes: 5 # 자동 동기화 주기 (분)
+    service-account-file: "service-account.json" # 시트 자동 채우기용 서비스 계정 JSON
+
+# 수학 퀴즈 설정
+mathquiz:
+  interval-minutes: 60  # 문제 출제 주기 (분)
+  timeout-seconds: 60   # 정답 제한 시간 (초)
+
+# SMP 설정
+smp:
+  world-name: "smp_world"
+  scatter-radius: 2000
+
+# 전투 태그 시간 (초)
+combat-tag-seconds: 10
+
+# AFK 설정
+afk:
+  timeout-minutes: 5
+
+# 공지 설정
+announcements:
+  enabled: true
+  interval-minutes: 5
+  messages:
+    - "&6[공지] &f서버 규칙을 지켜주세요!"
+    - "&6[공지] &f엑스레이, 핵 사용은 영구 밴입니다."
+    - "&6[공지] &f/스타터팩 으로 초보자 아이템을 받으세요!"
+    - "&6[공지] &f/shop 으로 아이템을 사고 팔 수 있습니다."
+    - "&6[공지] &f즐거운 게임 되세요! :)"

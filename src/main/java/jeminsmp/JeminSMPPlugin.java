@@ -31,6 +31,7 @@ import jeminsmp.waypoint.WaypointCommand;
 import jeminsmp.waypoint.WaypointManager;
 import jeminsmp.job.JobManager;
 import jeminsmp.job.JobListener;
+import jeminsmp.job.JobItemListener;
 import jeminsmp.job.JobCommand;
 import jeminsmp.job.SkillCommand;
 
@@ -226,6 +227,7 @@ public class JeminSMPPlugin extends JavaPlugin {
 
         // Job & Skill
         getServer().getPluginManager().registerEvents(new JobListener(this), this);
+        getServer().getPluginManager().registerEvents(new JobItemListener(this), this);
         var jobCmd = new JobCommand(this);
         getCommand("job").setExecutor(jobCmd);
         getCommand("job").setTabCompleter(jobCmd);

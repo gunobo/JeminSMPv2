@@ -127,7 +127,7 @@ public class JobManager {
         }
         if (leveledUp) {
             if (d.level >= MAX_LEVEL) d.exp = 0;
-            player.sendMessage("§6§l▲ " + job.icon() + " " + job.display() + " 레벨업! §e→ Lv." + d.level
+            player.sendMessage("§6§l▲ 퀘스트 달성! §e" + job.icon() + " " + job.display() + " Lv." + d.level
                     + " §7(스킬포인트 +1, 보유 " + d.skillPoints + ")");
         }
         save();

@@ -159,17 +159,19 @@ public class TradeManager {
     // ── 아이템 이동 시 상대 GUI 미리보기 동기화 ──
 
     public void syncPreview(TradeSession session) {
-        // A의 GUI에서 SLOTS_A 내용을 → B의 GUI SLOTS_B에 복사 (읽기 전용)
+        // A의 실제 제안(guiA의 SLOTS_A) → B 화면에서 "A 미리보기" 자리(guiB의 SLOTS_A, 클릭 차단 영역)에 복사
+        // B의 실제 제안(guiB의 SLOTS_B) → A 화면에서 "B 미리보기" 자리(guiA의 SLOTS_B, 클릭 차단 영역)에 복사
+        // (이전엔 서로의 "자기 자신 편집 칸"에 덮어써서 복사 버그 + 미리보기 미표시가 발생했음)
         Inventory guiA = session.guiA;
         Inventory guiB = session.guiB;
 
-        for (int i = 0; i < SLOTS_A.length; i++) {
-            ItemStack item = guiA.getItem(SLOTS_A[i]);
-            guiB.setItem(SLOTS_B[i], item != null ? grayOut(item.clone()) : null);
+        for (int slot : SLOTS_A) {
+            ItemStack item = guiA.getItem(slot);
+            guiB.setItem(slot, item != null ? grayOut(item.clone()) : null);
         }
-        for (int i = 0; i < SLOTS_B.length; i++) {
-            ItemStack item = guiB.getItem(SLOTS_B[i]);
-            guiA.setItem(SLOTS_A[i], item != null ? grayOut(item.clone()) : null);
+        for (int slot : SLOTS_B) {
+            ItemStack item = guiB.getItem(slot);
+            guiA.setItem(slot, item != null ? grayOut(item.clone()) : null);
         }
     }
 

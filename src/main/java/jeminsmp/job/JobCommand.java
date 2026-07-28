@@ -1,11 +1,13 @@
 package jeminsmp.job;
 
 import jeminsmp.JeminSMPPlugin;
+import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,6 +34,8 @@ public class JobCommand implements CommandExecutor, TabCompleter {
             case "list" -> handleList(player);
             case "info" -> handleInfo(player);
             case "select" -> handleSelect(player, args);
+            case "buyscroll" -> handleBuyScroll(player);
+            case "forceselect" -> handleForceSelect(player, args); // 전직의 서 버튼 전용 (확인 절차 없이 즉시 전직)
             default -> sendHelp(player);
         }
         return true;
@@ -40,9 +44,9 @@ public class JobCommand implements CommandExecutor, TabCompleter {
     private void handleList(Player player) {
         player.sendMessage("§6§l=== 직업 목록 ===");
         for (JobType t : JobType.values()) {
-            player.sendMessage("§7- " + t.icon() + " §e" + t.display() + " §7(§f" + t.name().toLowerCase() + "§7)");
+            player.sendMessage("§7- " + t.icon() + " §e" + t.display() + " §7(§f" + t.name().toLowerCase()
+                    + "§7) — " + t.questName() + ": " + t.questAction());
         }
-        player.sendMessage("§7채굴=광부, 수확=농부, 전투=전사, 낚시=어부 로 경험치를 얻습니다.");
     }
 
     private void handleInfo(Player player) {
@@ -55,13 +59,51 @@ public class JobCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("§6§l=== " + d.job.icon() + " " + d.job.display() + " ===");
         player.sendMessage("§7레벨: §fLv." + d.level + " §7(만렙 " + JobManager.MAX_LEVEL + ")");
         if (d.level < JobManager.MAX_LEVEL) {
-            player.sendMessage("§7경험치: §f" + d.exp + " / " + need);
+            player.sendMessage("§7퀘스트: §f" + d.job.questName() + " §7(" + d.job.questAction() + ") §e"
+                    + d.exp + " / " + need);
         }
         player.sendMessage("§7스킬포인트: §e" + d.skillPoints);
         for (SkillType t : SkillType.values()) {
             int lvl = d.skillLevel(t);
             player.sendMessage("  §7" + t.display() + ": §f" + lvl + "/" + JobManager.MAX_SKILL_LEVEL);
         }
+    }
+
+    private void handleForceSelect(Player player, String[] args) {
+        if (args.length < 2) return;
+        JobType job = JobType.fromString(args[1]);
+        if (job == null) return;
+        JobType current = plugin.getJobManager().getJob(player.getUniqueId());
+        plugin.getJobManager().selectJob(player.getUniqueId(), job);
+        if (current == null) {
+            player.sendMessage("§a" + job.icon() + " " + job.display() + " §a직업을 선택했습니다!");
+        } else {
+            player.sendMessage("§a직업을 " + current.display() + " §7→ §a" + job.icon() + " " + job.display()
+                    + " §a(으)로 변경했습니다. §7(레벨/스킬 초기화됨)");
+        }
+    }
+
+    private void handleBuyScroll(Player player) {
+        int have = countDiamonds(player);
+        if (have < JobItems.JOB_SCROLL_PRICE) {
+            player.sendMessage("§c다이아몬드가 부족합니다! §b💎 " + JobItems.JOB_SCROLL_PRICE + "개 필요 §7(보유: " + have + "개)");
+            return;
+        }
+        removeDiamonds(player, JobItems.JOB_SCROLL_PRICE);
+        player.getInventory().addItem(JobItems.createJobChangeScroll(plugin));
+        player.sendMessage("§a전직의 서 §a구매 완료! §7(💎 " + JobItems.JOB_SCROLL_PRICE + "개 사용, 우클릭하여 사용)");
+    }
+
+    private int countDiamonds(Player player) {
+        int count = 0;
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item != null && item.getType() == Material.DIAMOND) count += item.getAmount();
+        }
+        return count;
+    }
+
+    private void removeDiamonds(Player player, int amount) {
+        player.getInventory().removeItem(new ItemStack(Material.DIAMOND, amount));
     }
 
     private void handleSelect(Player player, String[] args) {
@@ -97,12 +139,13 @@ public class JobCommand implements CommandExecutor, TabCompleter {
                 §6§l=== /job 명령어 ===
                 §e/job list §7— 직업 목록
                 §e/job info §7— 내 직업 정보
-                §e/job select <직업> §7— 직업 선택/변경""");
+                §e/job select <직업> §7— 직업 선택/변경
+                §e/job buyscroll §7— 전직의 서 구매 (💎 """ + JobItems.JOB_SCROLL_PRICE + "개)");
     }
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
-        if (args.length == 1) return List.of("list", "info", "select");
+        if (args.length == 1) return List.of("list", "info", "select", "buyscroll");
         if (args.length == 2 && args[0].equalsIgnoreCase("select")) {
             return Arrays.stream(JobType.values()).map(t -> t.name().toLowerCase()).toList();
         }

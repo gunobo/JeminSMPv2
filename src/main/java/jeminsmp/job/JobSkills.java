@@ -1,6 +1,7 @@
 package jeminsmp.job;
 
 import jeminsmp.JeminSMPPlugin;
+import org.bukkit.FluidCollisionMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -8,6 +9,7 @@ import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
@@ -71,13 +73,17 @@ public class JobSkills {
         loc.getWorld().spawnParticle(Particle.BLOCK, loc, count, 0.4, 0.3, 0.4, material.createBlockData());
     }
 
-    // 이동기(4번째 스킬) 임시 구현 — 직업별 효과는 나중에 정해지면 교체
-    private void placeholderMove(Player player) {
-        Vector dir = player.getLocation().getDirection().setY(0.3);
-        player.setVelocity(dir.multiply(1.3));
-        particle(player.getLocation(), Particle.CLOUD, 15, 0.3, 0.1, 0.3);
-        sound(player, Sound.ENTITY_ENDERMAN_TELEPORT, 0.6f, 1.3f);
-        player.sendMessage("§7🏃 이동기 (효과 준비 중 — 임시로 앞으로 돌진만 함)");
+    // 굴착 돌진(광부 이동기)이 뚫으면 안 되는 블록
+    private static final Set<Material> TUNNEL_BLOCKED = Set.of(
+            Material.BEDROCK, Material.OBSIDIAN, Material.CRYING_OBSIDIAN, Material.RESPAWN_ANCHOR,
+            Material.END_PORTAL_FRAME, Material.END_PORTAL, Material.NETHER_PORTAL,
+            Material.REINFORCED_DEEPSLATE, Material.BARRIER, Material.WATER, Material.LAVA
+    );
+
+    private boolean isTunnelable(org.bukkit.block.Block block) {
+        Material type = block.getType();
+        if (type.isAir() || !type.isSolid() || TUNNEL_BLOCKED.contains(type)) return false;
+        return !(block.getState() instanceof InventoryHolder);
     }
 
     // ── ⛏ 광부 ──
@@ -125,7 +131,30 @@ public class JobSkills {
                 sound(player, Sound.ENTITY_GENERIC_EXPLODE, 1f, 0.7f);
                 player.sendMessage("§8⛏ 지진! §7주변 적 " + hit + "명을 진탕시켰습니다 (둔화+시야 뿌옇게).");
             }
-            case MOVE -> placeholderMove(player);
+            case MOVE -> {
+                // 굴착 돌진: 바라보는 방향으로 짧은 터널을 뚫으며 돌진
+                int length = switch (level) { case 1 -> 3; case 2 -> 5; default -> 7; };
+                double dashPower = switch (level) { case 1 -> 1.0; case 2 -> 1.2; default -> 1.4; };
+
+                Vector dir = player.getLocation().getDirection().normalize();
+                Location cursor = player.getEyeLocation().clone();
+                int broken = 0;
+                for (int i = 0; i < length; i++) {
+                    cursor.add(dir);
+                    var block = cursor.getBlock();
+                    if (isTunnelable(block)) {
+                        blockParticle(block.getLocation().add(0.5, 0.5, 0.5), block.getType(), 8);
+                        block.setType(Material.AIR);
+                        broken++;
+                    }
+                }
+                Vector dash = dir.clone().multiply(dashPower);
+                dash.setY(Math.max(dash.getY(), 0.2));
+                player.setVelocity(player.getVelocity().add(dash));
+                sound(player, Sound.BLOCK_STONE_BREAK, 1f, 0.8f);
+                sound(player, Sound.ENTITY_ENDERMAN_TELEPORT, 0.5f, 1.4f);
+                player.sendMessage("§6⛏ 굴착 돌진! §7블록 " + broken + "개를 뚫으며 돌진.");
+            }
         }
     }
 
@@ -171,7 +200,31 @@ public class JobSkills {
                 sound(player, Sound.BLOCK_VINE_STEP, 1f, 0.6f);
                 player.sendMessage("§2🌾 뿌리 속박! §7주변 적을 뿌리로 묶었습니다.");
             }
-            case MOVE -> placeholderMove(player);
+            case MOVE -> {
+                // 새싹 도약: 위+앞으로 크게 도약하며 자신+주변 팀원에게 속도 증가
+                double height = switch (level) { case 1 -> 0.7; case 2 -> 0.9; default -> 1.1; };
+                double forward = switch (level) { case 1 -> 0.6; case 2 -> 0.8; default -> 1.0; };
+                int seconds = switch (level) { case 1 -> 3; case 2 -> 4; default -> 5; };
+                int amp = level >= 3 ? 1 : 0;
+
+                Vector dir = player.getLocation().getDirection().setY(0);
+                if (dir.lengthSquared() < 0.0001) dir = new Vector(0, 0, 1);
+                dir.normalize().multiply(forward);
+                dir.setY(height);
+                player.setVelocity(dir);
+
+                Set<UUID> teammates = plugin.getTeamManager().getTeammates(player.getUniqueId());
+                int boosted = 1;
+                effect(player, PotionEffectType.SPEED, seconds, amp);
+                for (LivingEntity e : nearbyEnemies(player, 3.5)) {
+                    if (!(e instanceof Player p) || !teammates.contains(p.getUniqueId())) continue;
+                    effect(p, PotionEffectType.SPEED, seconds, amp);
+                    boosted++;
+                }
+                particle(player.getLocation(), Particle.HAPPY_VILLAGER, 15, 0.4, 0.2, 0.4);
+                sound(player, Sound.BLOCK_VINE_STEP, 1f, 1.3f);
+                player.sendMessage("§a🌾 새싹 도약! §7팀원 " + boosted + "명에게 속도 증가 + 도약.");
+            }
         }
     }
 
@@ -230,7 +283,39 @@ public class JobSkills {
                 sound(player, Sound.ENTITY_WOLF_GROWL, 1.2f, 0.6f);
                 player.sendMessage("§4⚔ 포효! §7넓은 범위의 적을 위축시켰습니다.");
             }
-            case MOVE -> placeholderMove(player);
+            case MOVE -> {
+                // 질풍 도약: 높이 뛰어올랐다가 착지하며 충격파(딜의 수평 돌격과 달리 수직 기동+진입)
+                double dmg = switch (level) { case 1 -> 5; case 2 -> 7; default -> 9; };
+                double radius = switch (level) { case 1 -> 3; case 2 -> 3.5; default -> 4; };
+                double jumpPower = switch (level) { case 1 -> 1.1; case 2 -> 1.3; default -> 1.5; };
+
+                Vector dir = player.getLocation().getDirection().setY(0);
+                if (dir.lengthSquared() < 0.0001) dir = new Vector(0, 0, 1);
+                dir.normalize().multiply(0.4);
+                dir.setY(jumpPower);
+                player.setVelocity(dir);
+                particle(player.getLocation(), Particle.CLOUD, 20, 0.3, 0.1, 0.3);
+                sound(player, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1f, 1.4f);
+                player.sendMessage("§c⚔ 질풍 도약! §7높이 뛰어올라 착지하며 충격파를 일으킵니다.");
+
+                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                    if (!player.isOnline()) return;
+                    Location loc = player.getLocation();
+                    player.setVelocity(new Vector(0, -0.6, 0));
+                    blockParticle(loc, Material.COBBLESTONE, 25);
+                    sound(player, Sound.ENTITY_GENERIC_EXPLODE, 1f, 1.3f);
+                    int hit = 0;
+                    for (LivingEntity e : nearbyEnemies(player, radius)) {
+                        e.damage(dmg, player);
+                        Vector push = e.getLocation().toVector().subtract(loc.toVector());
+                        if (push.lengthSquared() > 0) push.normalize().multiply(1.0);
+                        push.setY(0.5);
+                        e.setVelocity(e.getVelocity().add(push));
+                        hit++;
+                    }
+                    if (hit > 0) player.sendMessage("§4⚔ 충격파! §7" + hit + "명에게 " + (int) dmg + " 피해 + 넉백.");
+                }, 14L);
+            }
         }
     }
 
@@ -273,7 +358,29 @@ public class JobSkills {
                 sound(player, Sound.ENTITY_GENERIC_SPLASH, 1.2f, 0.8f);
                 player.sendMessage("§9🎣 파도! §7주변 적을 크게 밀쳐냈습니다.");
             }
-            case MOVE -> placeholderMove(player);
+            case MOVE -> {
+                // 갈고리 사출: 바라보는 방향의 벽/블록에 걸려 그쪽으로 끌려감 (허공이면 짧게 전진)
+                double maxDist = switch (level) { case 1 -> 8; case 2 -> 10; default -> 12; };
+                double speed = switch (level) { case 1 -> 1.3; case 2 -> 1.6; default -> 1.9; };
+
+                Location eye = player.getEyeLocation();
+                Vector dir = eye.getDirection();
+                var hit = player.getWorld().rayTraceBlocks(eye, dir, maxDist, FluidCollisionMode.NEVER, true);
+                boolean hitWall = hit != null && hit.getHitBlock() != null;
+
+                Vector pull = dir.clone().multiply(speed * (hitWall ? 1.0 : 0.6));
+                pull.setY(Math.max(pull.getY(), 0.25));
+                player.setVelocity(pull);
+
+                if (hitWall) {
+                    particle(hit.getHitPosition().toLocation(player.getWorld()), Particle.SPLASH, 20, 0.2, 0.2, 0.2);
+                    player.sendMessage("§3🎣 갈고리 사출! §7벽에 걸려 끌려갑니다.");
+                } else {
+                    player.sendMessage("§3🎣 갈고리 사출! §7허공에 사출... 앞으로 전진.");
+                }
+                sound(player, Sound.ENTITY_FISHING_BOBBER_SPLASH, 1f, 1f);
+                sound(player, Sound.ITEM_TRIDENT_HIT, 0.7f, 1.3f);
+            }
         }
     }
 }

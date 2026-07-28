@@ -59,7 +59,10 @@ public class SkillCommand implements CommandExecutor, TabCompleter {
         }
 
         skills.use(player, d.job, type, skillLevel);
-        jm.setCooldown(uuid, type, JobManager.cooldownSeconds(skillLevel));
+        int cooldownSeconds = JobManager.cooldownSeconds(skillLevel);
+        jm.setCooldown(uuid, type, cooldownSeconds);
+        // 아이템에 엔더펄/황금사과 같은 쿨다운 표시(사선 회색) 띄우기
+        player.setCooldown(JobItems.cooldownGroupKey(plugin, type), cooldownSeconds * 20);
     }
 
     private void sendHelp(Player player) {

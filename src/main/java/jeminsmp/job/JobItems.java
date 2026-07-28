@@ -29,6 +29,11 @@ public class JobItems {
         return new NamespacedKey(plugin, "job_skill_item");
     }
 
+    /** 스킬 종류별 쿨다운 그룹 키. 아이템에 박아두면 엔더펄/황금사과처럼 쿨다운 중엔 아이콘이 회색으로 사선 표시됨 */
+    public static NamespacedKey cooldownGroupKey(org.bukkit.plugin.Plugin plugin, SkillType type) {
+        return new NamespacedKey(plugin, "skill_cd_" + type.name().toLowerCase());
+    }
+
     /** 직업 + 스킬 종류 조합마다 다른 아이콘 키. resourcepack의 skill_<직업>_<스킬>.png 파일명과 일치해야 함 */
     private static String skillModelKey(JobType job, SkillType type) {
         return "skill_" + job.name().toLowerCase() + "_" + type.name().toLowerCase();
@@ -105,6 +110,9 @@ public class JobItems {
                 Component.text("좌클릭 또는 우클릭: 스킬 사용", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)
         ));
         setModelKey(meta, skillModelKey(job, type));
+        var useCooldown = meta.getUseCooldown();
+        useCooldown.setCooldownGroup(cooldownGroupKey(plugin, type));
+        meta.setUseCooldown(useCooldown);
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         meta.getPersistentDataContainer().set(skillItemKey(plugin), PersistentDataType.STRING, type.name());
         item.setItemMeta(meta);

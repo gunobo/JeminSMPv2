@@ -1,25 +1,26 @@
 # UUID/스킨 캐시 DB 설정 (docker-compose의 mysql 서비스)
-# 아래 ${...} 값들은 도커 컨테이너 기동 시 .env 값으로 자동 치환됩니다 (REPLACE_ENV_IN_PLACE).
+# 아래 ${CFG_...} 값들은 도커 컨테이너 기동 시 .env 값으로 자동 치환됩니다 (REPLACE_ENV_IN_PLACE,
+# itzg 이미지 기본 프리픽스가 CFG_ 라서 그에 맞춤).
 database:
   host: mysql
   port: 3306
-  name: ${MYSQL_DATABASE}
-  user: ${MYSQL_USER}
-  password: "${MYSQL_PASSWORD}"
+  name: ${CFG_MYSQL_DATABASE}
+  user: ${CFG_MYSQL_USER}
+  password: "${CFG_MYSQL_PASSWORD}"
 
 # Discord 봇 설정
 discord:
-  enabled: ${DISCORD_ENABLED}
-  bot-token: "${DISCORD_BOT_TOKEN}"
-  admin-role-id: "${DISCORD_ADMIN_ROLE_ID}"
+  enabled: ${CFG_DISCORD_ENABLED}
+  bot-token: "${CFG_DISCORD_BOT_TOKEN}"
+  admin-role-id: "${CFG_DISCORD_ADMIN_ROLE_ID}"
   linked-role-id: ""   # 마크 연동 시 자동 부여할 디스코드 역할 ID (비워두면 역할 부여 안 함)
   command-prefix: "!"
   console-log-level: "WARNING"
   console-flush-interval-ticks: 100
 
   channels:
-    events: "${DISCORD_CHANNEL_EVENTS}"
-    console: "${DISCORD_CHANNEL_CONSOLE}"
+    events: "${CFG_DISCORD_CHANNEL_EVENTS}"
+    console: "${CFG_DISCORD_CHANNEL_CONSOLE}"
 
   log:
     join: true
@@ -53,8 +54,8 @@ warn:
 google:
   sheets:
     enabled: false # true 로 바꾸면 자동 동기화 시작
-    api-key: "${GOOGLE_SHEETS_API_KEY}" # Google Cloud API 키 (Sheets API v4 활성화 필요)
-    sheet-id: "${GOOGLE_SHEETS_SHEET_ID}" # 스프레드시트 URL의 /d/<ID>/ 부분
+    api-key: "${CFG_GOOGLE_SHEETS_API_KEY}" # Google Cloud API 키 (Sheets API v4 활성화 필요)
+    sheet-id: "${CFG_GOOGLE_SHEETS_SHEET_ID}" # 스프레드시트 URL의 /d/<ID>/ 부분
     range: "B2:J10" # 그리드 형식 범위 (B=요일, C~J=시간대)
     sync-interval-minutes: 5 # 자동 동기화 주기 (분)
     service-account-file: "service-account.json" # 시트 자동 채우기용 서비스 계정 JSON

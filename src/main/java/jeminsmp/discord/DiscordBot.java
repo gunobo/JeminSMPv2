@@ -61,5 +61,15 @@ public class DiscordBot {
     public TextChannel getEventsChannel() { return eventsChannel; }
     public JDA getJda() { return jda; }
 
-    public void shutdown() { if (jda != null) jda.shutdown(); }
+    public void shutdown() {
+        if (jda == null) return;
+        jda.shutdownNow();
+        try {
+            // JDA 내부 웹소켓 스레드가 완전히 죽기 전에 Paper가 플러그인 jar를 닫아버리면
+            // 그 스레드가 나중에 클래스를 로드하려다 "zip file closed" 에러를 냄. 완전히 죽을 때까지 대기.
+            jda.awaitShutdown(java.time.Duration.ofSeconds(5));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
 }

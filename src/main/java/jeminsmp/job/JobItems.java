@@ -61,9 +61,10 @@ public class JobItems {
     public static void sendJobSelectPrompt(Player player, String header) {
         Component msg = Component.text(header, NamedTextColor.LIGHT_PURPLE);
         for (JobType t : JobType.values()) {
-            msg = msg.append(Component.text("[" + t.icon() + t.display() + "] ", NamedTextColor.AQUA, TextDecoration.BOLD)
-                    .clickEvent(ClickEvent.runCommand("/job forceselect " + t.name().toLowerCase()))
-                    .hoverEvent(HoverEvent.showText(Component.text("클릭하여 " + t.display() + " 선택"))));
+            msg = msg.append(Component.newline())
+                    .append(Component.text("  [" + t.icon() + " " + t.display() + "]", NamedTextColor.AQUA, TextDecoration.BOLD)
+                            .clickEvent(ClickEvent.runCommand("/job forceselect " + t.name().toLowerCase()))
+                            .hoverEvent(HoverEvent.showText(Component.text("클릭하여 " + t.display() + " 선택"))));
         }
         player.sendMessage(msg);
     }

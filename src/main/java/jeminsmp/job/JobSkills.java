@@ -71,6 +71,15 @@ public class JobSkills {
         loc.getWorld().spawnParticle(Particle.BLOCK, loc, count, 0.4, 0.3, 0.4, material.createBlockData());
     }
 
+    // 이동기(4번째 스킬) 임시 구현 — 직업별 효과는 나중에 정해지면 교체
+    private void placeholderMove(Player player) {
+        Vector dir = player.getLocation().getDirection().setY(0.3);
+        player.setVelocity(dir.multiply(1.3));
+        particle(player.getLocation(), Particle.CLOUD, 15, 0.3, 0.1, 0.3);
+        sound(player, Sound.ENTITY_ENDERMAN_TELEPORT, 0.6f, 1.3f);
+        player.sendMessage("§7🏃 이동기 (효과 준비 중 — 임시로 앞으로 돌진만 함)");
+    }
+
     // ── ⛏ 광부 ──
 
     private void useMiner(Player player, SkillType type, int level) {
@@ -116,6 +125,7 @@ public class JobSkills {
                 sound(player, Sound.ENTITY_GENERIC_EXPLODE, 1f, 0.7f);
                 player.sendMessage("§8⛏ 지진! §7주변 적 " + hit + "명을 진탕시켰습니다 (둔화+시야 뿌옇게).");
             }
+            case MOVE -> placeholderMove(player);
         }
     }
 
@@ -161,6 +171,7 @@ public class JobSkills {
                 sound(player, Sound.BLOCK_VINE_STEP, 1f, 0.6f);
                 player.sendMessage("§2🌾 뿌리 속박! §7주변 적을 뿌리로 묶었습니다.");
             }
+            case MOVE -> placeholderMove(player);
         }
     }
 
@@ -219,6 +230,7 @@ public class JobSkills {
                 sound(player, Sound.ENTITY_WOLF_GROWL, 1.2f, 0.6f);
                 player.sendMessage("§4⚔ 포효! §7넓은 범위의 적을 위축시켰습니다.");
             }
+            case MOVE -> placeholderMove(player);
         }
     }
 
@@ -261,6 +273,7 @@ public class JobSkills {
                 sound(player, Sound.ENTITY_GENERIC_SPLASH, 1.2f, 0.8f);
                 player.sendMessage("§9🎣 파도! §7주변 적을 크게 밀쳐냈습니다.");
             }
+            case MOVE -> placeholderMove(player);
         }
     }
 }

@@ -23,55 +23,56 @@ public class SkillCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) { sender.sendMessage("플레이어만 사용할 수 있습니다."); return true; }
-        if (args.length < 2) { sendHelp(player); return true; }
-
-        switch (args[0].toLowerCase()) {
-            case "use" -> handleUse(player, args[1]);
-            case "invest" -> handleInvest(player, args[1]);
-            default -> sendHelp(player);
-        }
+        if (args.length < 2 || !args[0].equalsIgnoreCase("use")) { sendHelp(player); return true; }
+        handleUse(player, args[1]);
         return true;
     }
 
     public void handleUse(Player player, String skillArg) {
+        tryUse(player, skillArg, true);
+    }
+
+    /** 키 입력(전투/채굴 중 자동 트리거)으로 시도할 때 — 실패해도 채팅 스팸 안 나게 조용히 무시 */
+    public void tryUseQuiet(Player player, String skillArg) {
+        tryUse(player, skillArg, false);
+    }
+
+    private void tryUse(Player player, String skillArg, boolean verbose) {
         SkillType type = SkillType.fromString(skillArg);
-        if (type == null) { player.sendMessage("§c존재하지 않는 스킬입니다. (heal|deal|force)"); return; }
+        if (type == null) { if (verbose) player.sendMessage("§c존재하지 않는 스킬입니다. (heal|deal|force|move)"); return; }
 
         JobManager jm = plugin.getJobManager();
         UUID uuid = player.getUniqueId();
         var d = jm.getData(uuid);
 
-        if (d.job == null) { player.sendMessage("§c직업을 먼저 선택하세요. /job select <직업>"); return; }
+        if (d.job == null) { if (verbose) player.sendMessage("§c직업을 먼저 선택하세요. /job select <직업>"); return; }
         int skillLevel = d.skillLevel(type);
-        if (skillLevel <= 0) { player.sendMessage("§c" + type.display() + " 스킬을 아직 배우지 않았습니다. /skill invest " + type.name().toLowerCase()); return; }
+        if (skillLevel <= 0) {
+            if (verbose) player.sendMessage("§c" + type.display() + " 스킬이 아직 잠겨있습니다. 레벨업하면 자동으로 해금됩니다.");
+            return;
+        }
 
         long remaining = jm.getCooldownRemainingSeconds(uuid, type);
-        if (remaining > 0) { player.sendMessage("§c쿨다운 중입니다. §e" + remaining + "초 §c남음."); return; }
+        if (remaining > 0) {
+            if (verbose) player.sendMessage("§c쿨다운 중입니다. §e" + remaining + "초 §c남음.");
+            return;
+        }
 
         skills.use(player, d.job, type, skillLevel);
         jm.setCooldown(uuid, type, JobManager.cooldownSeconds(skillLevel));
     }
 
-    private void handleInvest(Player player, String skillArg) {
-        SkillType type = SkillType.fromString(skillArg);
-        if (type == null) { player.sendMessage("§c존재하지 않는 스킬입니다. (heal|deal|force)"); return; }
-        String error = plugin.getJobManager().invest(player.getUniqueId(), type);
-        if (error != null) { player.sendMessage("§c" + error); return; }
-        int newLevel = plugin.getJobManager().getData(player.getUniqueId()).skillLevel(type);
-        player.sendMessage("§a" + type.display() + " 스킬 §e레벨 " + newLevel + " §a로 강화했습니다!");
-    }
-
     private void sendHelp(Player player) {
         player.sendMessage("""
                 §6§l=== /skill 명령어 ===
-                §e/skill use <heal|deal|force> §7— 액티브 스킬 사용
-                §e/skill invest <heal|deal|force> §7— 스킬포인트 투자 (레벨업)""");
+                §e/skill use <heal|deal|force|move> §7— 액티브 스킬 사용
+                §7스킬은 직업 레벨업 시 딜→힐→포스 순서로 자동 해금/성장됩니다.""");
     }
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
-        if (args.length == 1) return List.of("use", "invest");
-        if (args.length == 2) return List.of("heal", "deal", "force");
+        if (args.length == 1) return List.of("use");
+        if (args.length == 2) return List.of("heal", "deal", "force", "move");
         return List.of();
     }
 }

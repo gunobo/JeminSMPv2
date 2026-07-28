@@ -3,7 +3,8 @@ package jeminsmp.job;
 public enum SkillType {
     HEAL("힐"),
     DEAL("딜"),
-    FORCE("포스");
+    FORCE("포스"),
+    MOVE("이동기");
 
     private final String display;
 

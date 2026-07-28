@@ -32,7 +32,7 @@ import jeminsmp.waypoint.WaypointManager;
 import jeminsmp.job.JobManager;
 import jeminsmp.job.JobListener;
 import jeminsmp.job.JobItemListener;
-import jeminsmp.job.JobHotkeyListener;
+import jeminsmp.job.JobSkillItemListener;
 import jeminsmp.job.JobCommand;
 import jeminsmp.job.SkillCommand;
 
@@ -103,6 +103,7 @@ public class JeminSMPPlugin extends JavaPlugin {
     private AfkManager afkManager;
     private WaypointManager waypointManager;
     private JobManager jobManager;
+    private JobSkillItemListener jobSkillItemListener;
     private AutoTitleManager autoTitleManager;
     private SleepManager sleepManager;
     private ScheduleManager scheduleManager;
@@ -235,7 +236,8 @@ public class JeminSMPPlugin extends JavaPlugin {
         var skillCmd = new SkillCommand(this);
         getCommand("skill").setExecutor(skillCmd);
         getCommand("skill").setTabCompleter(skillCmd);
-        getServer().getPluginManager().registerEvents(new JobHotkeyListener(skillCmd), this);
+        jobSkillItemListener = new JobSkillItemListener(this, skillCmd);
+        getServer().getPluginManager().registerEvents(jobSkillItemListener, this);
 
         // Trade
         getServer().getPluginManager().registerEvents(new TradeListener(this), this);
@@ -336,6 +338,7 @@ public class JeminSMPPlugin extends JavaPlugin {
     public TabManager getTabManager() { return tabManager; }
     public WaypointManager getWaypointManager() { return waypointManager; }
     public JobManager getJobManager() { return jobManager; }
+    public JobSkillItemListener getJobSkillItemListener() { return jobSkillItemListener; }
     public AutoTitleManager getAutoTitleManager() { return autoTitleManager; }
     public SleepManager getSleepManager() { return sleepManager; }
     public ScheduleManager getScheduleManager() { return scheduleManager; }

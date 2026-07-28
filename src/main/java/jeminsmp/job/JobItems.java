@@ -5,6 +5,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -12,7 +13,7 @@ import org.bukkit.persistence.PersistentDataType;
 
 import java.util.List;
 
-/** 직업 관련 아이템(전직의 서) 생성/판별. 리소스팩 텍스처가 추가되면 CustomModelData로 바로 반영됨. */
+/** 직업 관련 아이템(전직의 서, 스킬템) 생성/판별. 리소스팩 텍스처가 추가되면 CustomModelData로 바로 반영됨. */
 public class JobItems {
 
     public static final int JOB_SCROLL_PRICE = 15; // 다이아 가격
@@ -20,6 +21,15 @@ public class JobItems {
 
     private static NamespacedKey scrollKey(org.bukkit.plugin.Plugin plugin) {
         return new NamespacedKey(plugin, "job_change_scroll");
+    }
+
+    private static NamespacedKey skillItemKey(org.bukkit.plugin.Plugin plugin) {
+        return new NamespacedKey(plugin, "job_skill_item");
+    }
+
+    /** 직업 + 스킬 종류 조합마다 다른 아이콘: 2000 + (직업순번+1)*10 + (스킬순번+1) */
+    private static int skillModelData(JobType job, SkillType type) {
+        return 2000 + (job.ordinal() + 1) * 10 + (type.ordinal() + 1);
     }
 
     public static ItemStack createJobChangeScroll(org.bukkit.plugin.Plugin plugin) {
@@ -43,5 +53,49 @@ public class JobItems {
         if (item == null || item.getType() != Material.PAPER || !item.hasItemMeta()) return false;
         var meta = item.getItemMeta();
         return meta.getPersistentDataContainer().has(scrollKey(plugin), PersistentDataType.BYTE);
+    }
+
+    // ── 스킬템 (우클릭: 전환 / 좌클릭: 발동) ──
+
+    public static ItemStack createSkillItem(org.bukkit.plugin.Plugin plugin, JobType job, SkillType type) {
+        ItemStack item = new ItemStack(Material.STICK);
+        applySkillType(plugin, item, job, type);
+        return item;
+    }
+
+    public static boolean isSkillItem(org.bukkit.plugin.Plugin plugin, ItemStack item) {
+        if (item == null || item.getType() != Material.STICK || !item.hasItemMeta()) return false;
+        return item.getItemMeta().getPersistentDataContainer().has(skillItemKey(plugin), PersistentDataType.STRING);
+    }
+
+    public static SkillType getSkillItemType(org.bukkit.plugin.Plugin plugin, ItemStack item) {
+        if (!isSkillItem(plugin, item)) return null;
+        String name = item.getItemMeta().getPersistentDataContainer().get(skillItemKey(plugin), PersistentDataType.STRING);
+        return name == null ? null : SkillType.fromString(name);
+    }
+
+    /** 같은 ItemStack 인스턴스에 타입/아이콘/이름을 다시 씀 (전환용). 직업+스킬 조합마다 아이콘이 다름 */
+    public static void applySkillType(org.bukkit.plugin.Plugin plugin, ItemStack item, JobType job, SkillType type) {
+        ItemMeta meta = item.getItemMeta();
+        meta.displayName(Component.text("⚡ " + job.icon() + " " + job.display() + " · " + type.display() + " 스킬템",
+                        NamedTextColor.AQUA, TextDecoration.BOLD)
+                .decoration(TextDecoration.ITALIC, false));
+        meta.lore(List.of(
+                Component.text("우클릭: 스킬 전환", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false),
+                Component.text("좌클릭: 스킬 사용", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)
+        ));
+        meta.setCustomModelData(skillModelData(job, type));
+        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+        meta.getPersistentDataContainer().set(skillItemKey(plugin), PersistentDataType.STRING, type.name());
+        item.setItemMeta(meta);
+    }
+
+    /** 인벤토리에 스킬템이 이미 있는지(칸 인덱스, 없으면 -1) */
+    public static int findSkillItemSlot(org.bukkit.plugin.Plugin plugin, Player player) {
+        var inv = player.getInventory();
+        for (int i = 0; i < inv.getSize(); i++) {
+            if (isSkillItem(plugin, inv.getItem(i))) return i;
+        }
+        return -1;
     }
 }

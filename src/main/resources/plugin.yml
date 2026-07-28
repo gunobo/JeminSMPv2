@@ -67,10 +67,10 @@ commands:
   # 직업
   job:
     description: 직업 선택 및 정보 확인
-    usage: /job <list|info|select> [직업]
+    usage: /job <list|info|select|buyscroll> [직업]
   skill:
-    description: 직업 스킬 사용/투자
-    usage: /skill <use|invest> <heal|deal|force>
+    description: 직업 스킬 사용 (평소엔 스킬템으로 발동)
+    usage: /skill use <heal|deal|force|move>
   # 리더보드
   top:
     description: 순위 확인

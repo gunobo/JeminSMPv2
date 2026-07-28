@@ -62,7 +62,6 @@ public class JobCommand implements CommandExecutor, TabCompleter {
             player.sendMessage("§7퀘스트: §f" + d.job.questName() + " §7(" + d.job.questAction() + ") §e"
                     + d.exp + " / " + need);
         }
-        player.sendMessage("§7스킬포인트: §e" + d.skillPoints);
         for (SkillType t : SkillType.values()) {
             int lvl = d.skillLevel(t);
             player.sendMessage("  §7" + t.display() + ": §f" + lvl + "/" + JobManager.MAX_SKILL_LEVEL);
@@ -75,6 +74,7 @@ public class JobCommand implements CommandExecutor, TabCompleter {
         if (job == null) return;
         JobType current = plugin.getJobManager().getJob(player.getUniqueId());
         plugin.getJobManager().selectJob(player.getUniqueId(), job);
+        plugin.getJobSkillItemListener().onJobChanged(player);
         if (current == null) {
             player.sendMessage("§a" + job.icon() + " " + job.display() + " §a직업을 선택했습니다!");
         } else {
@@ -116,6 +116,7 @@ public class JobCommand implements CommandExecutor, TabCompleter {
 
         if (current == null) {
             plugin.getJobManager().selectJob(uuid, job);
+            plugin.getJobSkillItemListener().onJobChanged(player);
             player.sendMessage("§a" + job.icon() + " " + job.display() + " §a직업을 선택했습니다!");
             return;
         }
@@ -125,6 +126,7 @@ public class JobCommand implements CommandExecutor, TabCompleter {
         if (pendingReselect.get(uuid) == job) {
             pendingReselect.remove(uuid);
             plugin.getJobManager().selectJob(uuid, job);
+            plugin.getJobSkillItemListener().onJobChanged(player);
             player.sendMessage("§a직업을 " + current.display() + " §7→ §a" + job.icon() + " " + job.display()
                     + " §a(으)로 변경했습니다. §7(레벨/스킬 초기화됨)");
         } else {

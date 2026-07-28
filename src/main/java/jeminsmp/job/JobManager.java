@@ -14,20 +14,34 @@ import java.util.UUID;
 public class JobManager {
 
     public static final int MAX_LEVEL = 30;
-    public static final int MAX_SKILL_LEVEL = 3;
+    public static final int MAX_SKILL_LEVEL = 5;
+
+    // 딜 -> 힐 -> 포스 순서로 돌아가며 레벨 1개씩 자동 해금/성장. 3개 다 5레벨 찍으면(직업레벨 15) 이동기가 이어서 해금/성장.
+    private static final SkillType[] UNLOCK_ORDER = { SkillType.DEAL, SkillType.HEAL, SkillType.FORCE };
+    private static final int CORE_MAX_JOB_LEVEL = UNLOCK_ORDER.length * MAX_SKILL_LEVEL; // 15
 
     public static class JobData {
         public JobType job;
         public int level = 1;
         public long exp = 0;
-        public int skillPoints = 0;
-        public final Map<SkillType, Integer> skillLevels = new EnumMap<>(SkillType.class);
 
-        public JobData() {
-            for (SkillType t : SkillType.values()) skillLevels.put(t, 0);
+        public int skillLevel(SkillType type) {
+            if (type == SkillType.MOVE) {
+                if (level <= CORE_MAX_JOB_LEVEL) return 0;
+                return Math.min(level - CORE_MAX_JOB_LEVEL, MAX_SKILL_LEVEL);
+            }
+            int idx = indexOf(type);
+            int count = 0;
+            for (int lvl = 1; lvl <= Math.min(level, CORE_MAX_JOB_LEVEL); lvl++) {
+                if (UNLOCK_ORDER[(lvl - 1) % UNLOCK_ORDER.length] == type) count++;
+            }
+            return Math.min(count, MAX_SKILL_LEVEL);
         }
 
-        public int skillLevel(SkillType type) { return skillLevels.getOrDefault(type, 0); }
+        private static int indexOf(SkillType type) {
+            for (int i = 0; i < UNLOCK_ORDER.length; i++) if (UNLOCK_ORDER[i] == type) return i;
+            return -1;
+        }
     }
 
     private final JeminSMPPlugin plugin;
@@ -59,10 +73,6 @@ public class JobManager {
                 d.job = jobStr == null ? null : JobType.fromString(jobStr);
                 d.level = cfg.getInt("players." + uuidStr + ".level", 1);
                 d.exp = cfg.getLong("players." + uuidStr + ".exp", 0);
-                d.skillPoints = cfg.getInt("players." + uuidStr + ".skillPoints", 0);
-                for (SkillType t : SkillType.values()) {
-                    d.skillLevels.put(t, cfg.getInt("players." + uuidStr + ".skills." + t.name(), 0));
-                }
                 data.put(uuid, d);
             } catch (Exception ignored) {}
         }
@@ -76,10 +86,6 @@ public class JobManager {
             cfg.set(path + ".job", d.job == null ? null : d.job.name());
             cfg.set(path + ".level", d.level);
             cfg.set(path + ".exp", d.exp);
-            cfg.set(path + ".skillPoints", d.skillPoints);
-            for (SkillType t : SkillType.values()) {
-                cfg.set(path + ".skills." + t.name(), d.skillLevel(t));
-            }
         }
         try { cfg.save(file); }
         catch (IOException e) { plugin.getLogger().warning("jobs.yml 저장 실패: " + e.getMessage()); }
@@ -100,13 +106,12 @@ public class JobManager {
         d.job = job;
         d.level = 1;
         d.exp = 0;
-        d.skillPoints = 0;
-        for (SkillType t : SkillType.values()) d.skillLevels.put(t, 0);
         save();
     }
 
+    // 레벨업할수록 필요 경험치가 점점 가파르게 증가 (제곱 곡선)
     public static long expForLevel(int level) {
-        return level * 100L;
+        return 50L * level * level;
     }
 
     // ── 경험치 지급 & 레벨업 처리 ──
@@ -116,35 +121,34 @@ public class JobManager {
         if (d.level >= MAX_LEVEL) return;
 
         d.exp += amount;
-        boolean leveledUp = false;
+        int levelsGained = 0;
         while (d.level < MAX_LEVEL) {
             long need = expForLevel(d.level);
             if (d.exp < need) break;
             d.exp -= need;
             d.level++;
-            d.skillPoints++;
-            leveledUp = true;
+            levelsGained++;
         }
-        if (leveledUp) {
+        if (levelsGained > 0) {
             if (d.level >= MAX_LEVEL) d.exp = 0;
             player.sendMessage("§6§l▲ 퀘스트 달성! §e" + job.icon() + " " + job.display() + " Lv." + d.level
-                    + " §7(스킬포인트 +1, 보유 " + d.skillPoints + ")");
+                    + " §7— " + describeUnlock(d.level));
+            if (plugin.getJobSkillItemListener() != null) {
+                plugin.getJobSkillItemListener().regrantIfMissing(player);
+            }
         }
         save();
     }
 
-    // ── 스킬 투자 ──
-    public String invest(UUID uuid, SkillType type) {
-        JobData d = getData(uuid);
-        if (d.job == null) return "직업을 먼저 선택하세요. (/job select <직업>)";
-        int cur = d.skillLevel(type);
-        if (cur >= MAX_SKILL_LEVEL) return "이미 " + type.display() + " 스킬은 최대 레벨입니다.";
-        int cost = cur + 1;
-        if (d.skillPoints < cost) return "스킬포인트가 부족합니다. (필요 " + cost + ", 보유 " + d.skillPoints + ")";
-        d.skillPoints -= cost;
-        d.skillLevels.put(type, cur + 1);
-        save();
-        return null;
+    private String describeUnlock(int newLevel) {
+        if (newLevel <= CORE_MAX_JOB_LEVEL) {
+            SkillType t = UNLOCK_ORDER[(newLevel - 1) % UNLOCK_ORDER.length];
+            int skillLevel = ((newLevel - 1) / UNLOCK_ORDER.length) + 1;
+            return t.display() + " Lv" + skillLevel + (skillLevel == 1 ? " 해금!" : "로 성장!");
+        }
+        int moveLevel = newLevel - CORE_MAX_JOB_LEVEL;
+        if (moveLevel > MAX_SKILL_LEVEL) return "전부 최대 강화 완료";
+        return "이동기 Lv" + moveLevel + (moveLevel == 1 ? " 해금!" : "로 성장!");
     }
 
     // ── 쿨다운 ──
@@ -163,8 +167,10 @@ public class JobManager {
     public static int cooldownSeconds(int skillLevel) {
         return switch (skillLevel) {
             case 1 -> 60;
-            case 2 -> 45;
-            case 3 -> 30;
+            case 2 -> 50;
+            case 3 -> 40;
+            case 4 -> 30;
+            case 5 -> 20;
             default -> 60;
         };
     }

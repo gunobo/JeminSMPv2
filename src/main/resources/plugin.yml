@@ -86,18 +86,10 @@ commands:
   season:
     description: 시즌 정보 및 관리
     usage: /season [info|start <이름>|end|top|history]
-  # 사망 위치
-  deathpoint:
-    description: 마지막 사망 위치 확인
-    usage: /deathpoint
   # 스타터팩
   스타터팩:
     description: 스타터팩 지급 (구운소고기 64개)
     usage: /스타터팩
-  # 현상금
-  bounty:
-    description: 현상금 시스템
-    usage: /bounty <플레이어> <다이아> | list | cancel <플레이어>
   # 수면 투표
   sleepvote:
     description: 밤 건너뛰기 투표

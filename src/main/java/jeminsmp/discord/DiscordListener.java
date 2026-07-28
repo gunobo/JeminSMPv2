@@ -732,10 +732,6 @@ public class DiscordListener extends ListenerAdapter {
         EmbedBuilder eb = new EmbedBuilder()
                 .setTitle("📋 jeminSMPv1 패치노트 — v1.2")
                 .setColor(new Color(0x5865F2))
-                .addField("⚔️ 킬 스트릭 보상",
-                        "3·5·10·15·20 연속킬 시 💎 다이아몬드 + XP 지급\nKDA에 따라 다이아 수량 자동 보정 (×0.75 ~ ×2.0)", false)
-                .addField("💰 현상금 시스템",
-                        "`/bounty <플레이어> <다이아>` 로 현상금 설정\n킬 시 합산 지급, 탭 목록에 💰 표시", false)
                 .addField("💤 수면 투표",
                         "야간에 1명이 누우면 자동 투표 시작\n`[찬성]` `[반대]` 클릭 버튼, 과반수 시 즉시 낮", false)
                 .addField("📜 발전과제 자동 칭호",
@@ -775,7 +771,7 @@ public class DiscordListener extends ListenerAdapter {
         if (args.isBlank()) {
             event.getChannel().sendMessage(
                     "❓ 사용법: `!update <제목> | <내용>`\n"
-                    + "예시: `!update v1.2 패치 | - 현상금 시스템 추가\\n- 킬스트릭 보상 추가`"
+                    + "예시: `!update v1.2 패치 | - 팀 최대 인원 3명 제한\\n- 수면투표 1일 1회 제한`"
             ).queue();
             return;
         }

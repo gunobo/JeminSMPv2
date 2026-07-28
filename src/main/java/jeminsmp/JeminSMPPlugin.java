@@ -32,8 +32,6 @@ import jeminsmp.waypoint.WaypointManager;
 
 import jeminsmp.compensation.ClaimCommand;
 import jeminsmp.compensation.CompensationManager;
-import jeminsmp.bounty.BountyCommand;
-import jeminsmp.bounty.BountyManager;
 import jeminsmp.schedule.ScheduleListener;
 import jeminsmp.schedule.ScheduleManager;
 import jeminsmp.schedule.SheetsManager;
@@ -45,10 +43,8 @@ import jeminsmp.sleep.SleepCommand;
 import jeminsmp.sleep.SleepListener;
 import jeminsmp.sleep.SleepManager;
 import jeminsmp.death.DeathListener;
-import jeminsmp.death.DeathManager;
 import jeminsmp.death.LastWillCommand;
 import jeminsmp.death.LastWillManager;
-import jeminsmp.death.commands.DeathPointCommand;
 import jeminsmp.letter.LetterCommand;
 import jeminsmp.letter.LetterListener;
 import jeminsmp.letter.LetterManager;
@@ -108,13 +104,11 @@ public class JeminSMPPlugin extends JavaPlugin {
     private EconomyHelper economyHelper;
     private StarterPackCommand starterPackCommand;
     private TabManager tabManager;
-    private DeathManager deathManager;
     private AnnouncementManager announcementManager;
     private AfkManager afkManager;
     private WaypointManager waypointManager;
     private AutoTitleManager autoTitleManager;
     private SleepManager sleepManager;
-    private BountyManager bountyManager;
     private ScheduleManager scheduleManager;
     private SheetsManager sheetsManager;
     private WarnManager warnManager;
@@ -159,13 +153,11 @@ public class JeminSMPPlugin extends JavaPlugin {
         economyHelper = new EconomyHelper(this);
         titleManager = new TitleManager(this);
         tabManager = new TabManager(this);
-        deathManager = new DeathManager(this);
         afkManager = new AfkManager(this);
         waypointManager = new WaypointManager(this);
         autoTitleManager = new AutoTitleManager(this);
         announcementManager = new AnnouncementManager(this);
         sleepManager = new SleepManager(this);
-        bountyManager = new BountyManager(this);
         scheduleManager = new ScheduleManager(this);
         sheetsManager = new SheetsManager(this);
         warnManager = new WarnManager(this);
@@ -237,11 +229,6 @@ public class JeminSMPPlugin extends JavaPlugin {
         getCommand("balance").setExecutor(new BalanceCommand(this));
         getCommand("eco").setExecutor(new EcoCommand(this));
 
-        // Bounty
-        var bountyCmd = new BountyCommand(this);
-        getCommand("bounty").setExecutor(bountyCmd);
-        getCommand("bounty").setTabCompleter(bountyCmd);
-
         // Sleep vote
         var sleepCmd = new SleepCommand(this);
         getCommand("sleepvote").setExecutor(sleepCmd);
@@ -270,11 +257,10 @@ public class JeminSMPPlugin extends JavaPlugin {
         getCommand("season").setTabCompleter(seasonCommand);
         getServer().getPluginManager().registerEvents(new SeasonJoinListener(this), this);
 
-        // Leaderboard & Death
+        // Leaderboard
         var leaderboardCmd = new LeaderboardCommand(this);
         getCommand("top").setExecutor(leaderboardCmd);
         getCommand("top").setTabCompleter(leaderboardCmd);
-        getCommand("deathpoint").setExecutor(new DeathPointCommand(this));
 
         // SMP
         starterPackCommand = new StarterPackCommand(this);
@@ -365,14 +351,12 @@ public class JeminSMPPlugin extends JavaPlugin {
     public TitleManager getTitleManager() { return titleManager; }
     public EconomyHelper getEconomy() { return economyHelper; }
     public StarterPackCommand getStarterPackCommand() { return starterPackCommand; }
-    public DeathManager getDeathManager() { return deathManager; }
     public AnnouncementManager getAnnouncementManager() { return announcementManager; }
     public AfkManager getAfkManager() { return afkManager; }
     public TabManager getTabManager() { return tabManager; }
     public WaypointManager getWaypointManager() { return waypointManager; }
     public AutoTitleManager getAutoTitleManager() { return autoTitleManager; }
     public SleepManager getSleepManager() { return sleepManager; }
-    public BountyManager getBountyManager() { return bountyManager; }
     public ScheduleManager getScheduleManager() { return scheduleManager; }
     public SheetsManager getSheetsManager() { return sheetsManager; }
     public WarnManager getWarnManager() { return warnManager; }

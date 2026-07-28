@@ -38,19 +38,12 @@ public class TabManager {
                 ? LEGACY.deserialize(equippedDisplay + " ")
                 : Component.empty();
 
-        // 현상금 표시
-        int bounty = plugin.getBountyManager().getTotalBounty(player.getUniqueId());
-        Component bountyTag = bounty > 0
-                ? Component.text(" 💰" + bounty, NamedTextColor.GOLD)
-                : Component.empty();
-
         Component tabName = Component.text("[", NamedTextColor.DARK_GRAY)
                 .append(Component.text(ping + "ms", pingColor))
                 .append(Component.text("] ", NamedTextColor.DARK_GRAY))
                 .append(afk ? Component.text("[AFK] ", NamedTextColor.GRAY) : Component.empty())
                 .append(titlePrefix)
-                .append(player.displayName())
-                .append(bountyTag);
+                .append(player.displayName());
 
         player.playerListName(tabName);
     }

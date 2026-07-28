@@ -103,10 +103,10 @@ public class JobItems {
     /** 같은 ItemStack 인스턴스에 아이콘/이름을 다시 씀 (전직해서 직업이 바뀌었을 때 라벨 갱신용). 타입 자체는 안 바뀜 */
     public static void applySkillType(org.bukkit.plugin.Plugin plugin, ItemStack item, JobType job, SkillType type) {
         ItemMeta meta = item.getItemMeta();
-        meta.displayName(Component.text("⚡ " + job.display() + " · " + type.display() + " 스킬템",
-                        NamedTextColor.AQUA, TextDecoration.BOLD)
+        meta.displayName(Component.text("⚡ " + JobSkills.skillName(job, type), NamedTextColor.AQUA, TextDecoration.BOLD)
                 .decoration(TextDecoration.ITALIC, false));
         meta.lore(List.of(
+                Component.text(job.display() + " · " + type.display() + " 스킬", NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false),
                 Component.text("좌클릭 또는 우클릭: 스킬 사용", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)
         ));
         setModelKey(meta, skillModelKey(job, type));

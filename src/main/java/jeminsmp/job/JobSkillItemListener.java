@@ -117,11 +117,12 @@ public class JobSkillItemListener implements Listener {
 
             ItemStack skillItem = JobItems.createSkillItem(plugin, d.job, type);
             var leftover = player.getInventory().addItem(skillItem);
+            String name = JobSkills.skillName(d.job, type);
             if (leftover.isEmpty()) {
-                player.sendMessage("§b⚡ " + type.display() + " 스킬템을 획득했습니다! §7(좌/우클릭으로 사용)");
+                player.sendMessage("§b⚡ " + name + " 스킬템을 획득했습니다! §7(좌/우클릭으로 사용)");
             } else {
                 leftover.values().forEach(i -> plugin.getMailboxManager().addItem(player.getUniqueId(), i));
-                player.sendMessage("§b⚡ " + type.display() + " 스킬템 획득! §7인벤토리가 가득 차서 우편함으로 보냈습니다 (§f/우편함§7).");
+                player.sendMessage("§b⚡ " + name + " 스킬템 획득! §7인벤토리가 가득 차서 우편함으로 보냈습니다 (§f/우편함§7).");
             }
         }
     }

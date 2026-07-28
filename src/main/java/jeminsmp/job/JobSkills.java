@@ -36,6 +36,24 @@ public class JobSkills {
         }
     }
 
+    /** 직업별로 완전히 다른 스킬 고유 이름 (아이템 표시명 등에 사용) */
+    public static String skillName(JobType job, SkillType type) {
+        return switch (job) {
+            case MINER -> switch (type) {
+                case HEAL -> "대지의 축복"; case DEAL -> "낙석"; case FORCE -> "지진"; case MOVE -> "굴착 돌진";
+            };
+            case FARMER -> switch (type) {
+                case HEAL -> "수확의 축복"; case DEAL -> "가시덩굴"; case FORCE -> "뿌리 속박"; case MOVE -> "새싹 도약";
+            };
+            case WARRIOR -> switch (type) {
+                case HEAL -> "전투 의지"; case DEAL -> "돌격"; case FORCE -> "포효"; case MOVE -> "질풍 도약";
+            };
+            case FISHER -> switch (type) {
+                case HEAL -> "만조"; case DEAL -> "작살"; case FORCE -> "파도"; case MOVE -> "갈고리 사출";
+            };
+        };
+    }
+
     // ── 공용 유틸 ──
 
     private void heal(Player player, double amount) {

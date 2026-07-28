@@ -4,5 +4,8 @@ target/
 
 # 도커 런타임 데이터/시크릿 (서버에만 존재, 레포에는 안 올림)
 .env
+.env.test
 data/
+data-test/
 mysql-data/
+mysql-data-test/

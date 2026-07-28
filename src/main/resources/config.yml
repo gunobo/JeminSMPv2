@@ -9,7 +9,7 @@ database:
 
 # Discord 봇 설정
 discord:
-  enabled: true
+  enabled: ${DISCORD_ENABLED}
   bot-token: "${DISCORD_BOT_TOKEN}"
   admin-role-id: "${DISCORD_ADMIN_ROLE_ID}"
   linked-role-id: ""   # 마크 연동 시 자동 부여할 디스코드 역할 ID (비워두면 역할 부여 안 함)

@@ -14,6 +14,17 @@ services:
       ENABLE_RCON: "true"
       RCON_PASSWORD: "${RCON_PASSWORD}"
       SERVER_NAME: "jeminSMPv2"
+      # /data 안 플러그인 config.yml의 ${VAR} 를 아래 값들로 매 기동 시 치환
+      REPLACE_ENV_IN_PLACE: "true"
+      MYSQL_DATABASE: "${MYSQL_DATABASE:-jeminsmpv2}"
+      MYSQL_USER: "${MYSQL_USER:-jeminsmpv2}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
+      DISCORD_BOT_TOKEN: "${DISCORD_BOT_TOKEN}"
+      DISCORD_ADMIN_ROLE_ID: "${DISCORD_ADMIN_ROLE_ID}"
+      DISCORD_CHANNEL_EVENTS: "${DISCORD_CHANNEL_EVENTS}"
+      DISCORD_CHANNEL_CONSOLE: "${DISCORD_CHANNEL_CONSOLE}"
+      GOOGLE_SHEETS_API_KEY: "${GOOGLE_SHEETS_API_KEY:-}"
+      GOOGLE_SHEETS_SHEET_ID: "${GOOGLE_SHEETS_SHEET_ID:-}"
     ports:
       - "25565:25565"
     volumes:

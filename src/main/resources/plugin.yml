@@ -1,5 +1,5 @@
-name: jeminSMPv1
-version: "1.0"
+name: JeminSMPv2
+version: "2.0"
 main: jeminsmp.JeminSMPPlugin
 api-version: "1.21"
 description: jemin SMP 통합 플러그인

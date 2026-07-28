@@ -1,6 +1,8 @@
 package jeminsmp.job;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Material;
@@ -53,6 +55,17 @@ public class JobItems {
         if (item == null || item.getType() != Material.PAPER || !item.hasItemMeta()) return false;
         var meta = item.getItemMeta();
         return meta.getPersistentDataContainer().has(scrollKey(plugin), PersistentDataType.BYTE);
+    }
+
+    /** 채팅에 직업 선택 버튼(클릭 시 즉시 확정)을 보냄. 전직의 서 사용, 최초 접속 안내에서 공용으로 씀 */
+    public static void sendJobSelectPrompt(Player player, String header) {
+        Component msg = Component.text(header, NamedTextColor.LIGHT_PURPLE);
+        for (JobType t : JobType.values()) {
+            msg = msg.append(Component.text("[" + t.icon() + t.display() + "] ", NamedTextColor.AQUA, TextDecoration.BOLD)
+                    .clickEvent(ClickEvent.runCommand("/job forceselect " + t.name().toLowerCase()))
+                    .hoverEvent(HoverEvent.showText(Component.text("클릭하여 " + t.display() + " 선택"))));
+        }
+        player.sendMessage(msg);
     }
 
     // ── 스킬템 (우클릭: 전환 / 좌클릭: 발동) ──

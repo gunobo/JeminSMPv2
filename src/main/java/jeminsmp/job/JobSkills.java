@@ -98,14 +98,19 @@ public class JobSkills {
             }
             case FORCE -> {
                 int seconds = switch (level) { case 1 -> 3; case 2 -> 4; default -> 5; };
-                int amp = level >= 3 ? 1 : 0;
+                double launch = switch (level) { case 1 -> 0.5; case 2 -> 0.7; default -> 0.9; };
+                int hit = 0;
                 for (LivingEntity e : nearbyEnemies(player, 4.0)) {
-                    effect(e, PotionEffectType.SLOWNESS, seconds, amp + 1);
-                    effect(e, PotionEffectType.MINING_FATIGUE, seconds, amp);
-                    blockParticle(e.getLocation(), Material.DIRT, 25);
+                    Vector vel = e.getVelocity();
+                    vel.setY(Math.max(vel.getY(), launch));
+                    e.setVelocity(vel);
+                    effect(e, PotionEffectType.NAUSEA, seconds, 0);
+                    blockParticle(e.getLocation(), Material.STONE, 20);
+                    hit++;
                 }
-                sound(player, Sound.BLOCK_GRAVEL_BREAK, 1f, 0.6f);
-                player.sendMessage("§8⛏ 생매장! §7주변 적을 " + seconds + "초 동안 파묻었습니다.");
+                blockParticle(player.getLocation(), Material.STONE, 30);
+                sound(player, Sound.ENTITY_GENERIC_EXPLODE, 1f, 0.7f);
+                player.sendMessage("§8⛏ 지진! §7주변 적 " + hit + "명을 뒤흔들어 띄워 올렸습니다.");
             }
         }
     }
@@ -169,16 +174,35 @@ public class JobSkills {
                 player.sendMessage("§c⚔ 전투 의지! §7체력 " + (int) amount + " 회복 + 피해 감소.");
             }
             case DEAL -> {
+                // 돌격: 정면으로 돌진하면서 진행 방향에 걸리는 적 전부 타격 + 자신도 돌진
                 double dmg = switch (level) { case 1 -> 6; case 2 -> 9; default -> 12; };
-                LivingEntity target = nearestEnemy(player, 4.0);
-                if (target == null) { player.sendMessage("§c근처에 적이 없습니다."); return; }
-                target.damage(dmg, player);
-                Vector push = target.getLocation().toVector().subtract(player.getLocation().toVector());
-                if (push.lengthSquared() > 0) push.normalize().multiply(1.2).setY(0.4);
-                target.setVelocity(target.getVelocity().add(push));
-                particle(target.getLocation().add(0, 1, 0), Particle.SWEEP_ATTACK, 3, 0.3, 0.3, 0.3);
-                sound(player, Sound.ENTITY_IRON_GOLEM_ATTACK, 1f, 1f);
-                player.sendMessage("§c⚔ 강타! §7" + (int) dmg + " 피해 + 강한 넉백.");
+                double range = switch (level) { case 1 -> 4; case 2 -> 5; default -> 6; };
+                double dashPower = switch (level) { case 1 -> 1.2; case 2 -> 1.4; default -> 1.6; };
+
+                Vector dir = player.getLocation().getDirection().setY(0);
+                if (dir.lengthSquared() < 0.0001) dir = new Vector(0, 0, 1);
+                dir.normalize();
+
+                int hit = 0;
+                for (LivingEntity e : nearbyEnemies(player, range)) {
+                    Vector toTarget = e.getLocation().toVector().subtract(player.getLocation().toVector());
+                    toTarget.setY(0);
+                    if (toTarget.lengthSquared() < 0.01) continue;
+                    double angle = dir.angle(toTarget.normalize());
+                    if (angle > Math.toRadians(45)) continue;
+                    e.damage(dmg, player);
+                    Vector push = dir.clone().multiply(0.8);
+                    push.setY(0.4);
+                    e.setVelocity(e.getVelocity().add(push));
+                    particle(e.getLocation().add(0, 1, 0), Particle.SWEEP_ATTACK, 3, 0.2, 0.2, 0.2);
+                    hit++;
+                }
+                Vector dash = dir.clone().multiply(dashPower);
+                dash.setY(0.35);
+                player.setVelocity(player.getVelocity().add(dash));
+                sound(player, Sound.ENTITY_IRON_GOLEM_ATTACK, 1f, 1.2f);
+                sound(player, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1f, 0.8f);
+                player.sendMessage("§c⚔ 돌격! §7전방으로 돌진하며 " + hit + "명에게 " + (int) dmg + " 피해.");
             }
             case FORCE -> {
                 int seconds = switch (level) { case 1 -> 3; case 2 -> 4; default -> 5; };

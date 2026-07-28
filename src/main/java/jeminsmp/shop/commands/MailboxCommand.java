@@ -24,20 +24,34 @@ public class MailboxCommand implements CommandExecutor {
             sender.sendMessage("플레이어만 사용할 수 있습니다.");
             return true;
         }
-        int pending = plugin.getMailboxManager().getDiamonds(player.getUniqueId());
-        if (pending == 0) {
-            player.sendMessage(Component.text("📭 받을 다이아몬드가 없습니다.", NamedTextColor.GRAY));
+        var uuid = player.getUniqueId();
+        int pendingDiamonds = plugin.getMailboxManager().getDiamonds(uuid);
+        var pendingItems = plugin.getMailboxManager().getItems(uuid);
+        if (pendingDiamonds == 0 && pendingItems.isEmpty()) {
+            player.sendMessage(Component.text("📭 받을 게 없습니다.", NamedTextColor.GRAY));
             return true;
         }
-        int claimed = plugin.getMailboxManager().claimAndClear(player.getUniqueId());
-        int remaining = claimed;
-        while (remaining > 0) {
-            int stackSize = Math.min(remaining, 64);
-            var leftover = player.getInventory().addItem(new ItemStack(Material.DIAMOND, stackSize));
-            leftover.values().forEach(stack -> player.getWorld().dropItemNaturally(player.getLocation(), stack));
-            remaining -= stackSize;
+
+        if (pendingDiamonds > 0) {
+            int claimed = plugin.getMailboxManager().claimAndClear(uuid);
+            int remaining = claimed;
+            while (remaining > 0) {
+                int stackSize = Math.min(remaining, 64);
+                var leftover = player.getInventory().addItem(new ItemStack(Material.DIAMOND, stackSize));
+                leftover.values().forEach(stack -> player.getWorld().dropItemNaturally(player.getLocation(), stack));
+                remaining -= stackSize;
+            }
+            player.sendMessage(Component.text("📬 우편함에서 💎 " + claimed + "개의 다이아몬드를 수령했습니다!", NamedTextColor.GOLD));
         }
-        player.sendMessage(Component.text("📬 우편함에서 💎 " + claimed + "개의 다이아몬드를 수령했습니다!", NamedTextColor.GOLD));
+
+        if (!pendingItems.isEmpty()) {
+            var claimed = plugin.getMailboxManager().claimAndClearItems(uuid);
+            for (var item : claimed) {
+                var leftover = player.getInventory().addItem(item);
+                leftover.values().forEach(stack -> player.getWorld().dropItemNaturally(player.getLocation(), stack));
+            }
+            player.sendMessage(Component.text("📬 우편함에서 아이템 " + claimed.size() + "개를 수령했습니다!", NamedTextColor.GOLD));
+        }
         return true;
     }
 }

@@ -10,6 +10,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.PlayerAnimationEvent;
 import org.bukkit.event.player.PlayerAnimationType;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.inventory.ItemStack;
@@ -65,6 +66,14 @@ public class JobSkillItemListener implements Listener {
         event.getDrops().removeIf(i -> JobItems.isSkillItem(plugin, i));
     }
 
+    // 직접 버리는 것도 막기 (취소하면 원래 칸에 그대로 남음)
+    @EventHandler
+    public void onDrop(PlayerDropItemEvent event) {
+        if (!JobItems.isSkillItem(plugin, event.getItemDrop().getItemStack())) return;
+        event.setCancelled(true);
+        event.getPlayer().sendMessage("§c스킬템은 버릴 수 없습니다.");
+    }
+
     // 부활 시 해금된 스킬 있는데 스킬템이 없으면 다시 지급
     @EventHandler
     public void onRespawn(PlayerRespawnEvent event) {
@@ -108,8 +117,12 @@ public class JobSkillItemListener implements Listener {
 
             ItemStack skillItem = JobItems.createSkillItem(plugin, d.job, type);
             var leftover = player.getInventory().addItem(skillItem);
-            leftover.values().forEach(i -> player.getWorld().dropItemNaturally(player.getLocation(), i));
-            player.sendMessage("§b⚡ " + type.display() + " 스킬템을 획득했습니다! §7(좌/우클릭으로 사용)");
+            if (leftover.isEmpty()) {
+                player.sendMessage("§b⚡ " + type.display() + " 스킬템을 획득했습니다! §7(좌/우클릭으로 사용)");
+            } else {
+                leftover.values().forEach(i -> plugin.getMailboxManager().addItem(player.getUniqueId(), i));
+                player.sendMessage("§b⚡ " + type.display() + " 스킬템 획득! §7인벤토리가 가득 차서 우편함으로 보냈습니다 (§f/우편함§7).");
+            }
         }
     }
 }

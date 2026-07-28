@@ -3,9 +3,12 @@ package jeminsmp.shop;
 import jeminsmp.JeminSMPPlugin;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.inventory.ItemStack;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 public class MailboxManager {
@@ -39,6 +42,31 @@ public class MailboxManager {
         config.set(uuid.toString(), 0);
         save();
         return amount;
+    }
+
+    // ── 아이템 우편함 (다이아몬드와 별도 저장, 인벤토리 꽉 찼을 때 아이템 지급용) ──
+
+    public void addItem(UUID uuid, ItemStack item) {
+        List<ItemStack> items = getItems(uuid);
+        items.add(item);
+        config.set("items." + uuid, items);
+        save();
+    }
+
+    public List<ItemStack> getItems(UUID uuid) {
+        List<?> raw = config.getList("items." + uuid);
+        List<ItemStack> result = new ArrayList<>();
+        if (raw != null) {
+            for (Object o : raw) if (o instanceof ItemStack item) result.add(item);
+        }
+        return result;
+    }
+
+    public List<ItemStack> claimAndClearItems(UUID uuid) {
+        List<ItemStack> items = getItems(uuid);
+        config.set("items." + uuid, null);
+        save();
+        return items;
     }
 
     private void save() {

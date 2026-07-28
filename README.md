@@ -1,4 +1,4 @@
-# 🗡️ jeminSMPv1
+# 🗡️ JeminSMPv2
 
 > Paper 1.21.11 기반 통합 SMP 플러그인  
 > 기존 플러그인 10개를 하나로 합친 fat jar (~15 MB)
@@ -11,6 +11,27 @@
 mvn package -q
 # → target/jeminSMPv1-1.0.jar
 ```
+
+---
+
+## 🔄 v1 → v2 변경사항
+
+**제거됨**
+- 💰 현상금 시스템 (`/bounty`) — 전체 제거
+- 💀 사망 위치 (`/deathpoint`) — 제거 (유언 `/유언`은 그대로 유지)
+- 🔥 킬 스트릭 보상 (다이아·XP 지급, KDA 배율, 연속킬 전체 방송) — 제거. 연속킬 카운팅 자체(`/kills`, `/top streak`)와 그걸 이용하는 전투락은 유지
+- 🧮 수학 퀴즈 (`/mathquiz`) — 전체 제거
+- 🏆 시즌 시스템 (`/season`, SMP 시작 시 자동 시즌 전환) — 전체 제거
+- 📍 웨이포인트 텔레포트 (`/wp tp`) — 제거. 저장·목록·삭제·공유는 유지
+- 💰 가상 경제 (`/balance`, `/eco`) — 제거. 다이아몬드가 실질적 화폐(`/shop`, `/title buy`)라 별도 잔액 시스템은 뺌. 보상 수령(`/claim`)도 아이템 지급만 남음
+
+**추가/변경됨**
+- 👥 팀 최대 인원 **3명** 제한
+- ⚔️ 전투 중·킬스트릭 중 `/team tp`, `/team home` 차단
+- 💤 수면 투표 **1일 1회** 제한 (통과된 날은 재투표 불가)
+- 🕐 운영 스케줄 기본값 반전: `schedule.enabled: false`일 때 예전엔 "항상 열림"이었는데 이제 **"항상 닫힘(대기열)"**. OP는 항상 통과, 나머지는 관리자가 디스코드 `!opennow`로 열어야 함
+- 🐳 도커 배포 체계 신설 — 운영/테스트 환경을 `docker-compose.yml` 하나로 분리 운영 (`-p` 프로젝트명으로 구분), 시크릿은 `.env`로 통합 관리
+- 🏷️ 플러그인명/버전 `jeminSMPv1 1.0` → `JeminSMPv2 2.0`
 
 ---
 
@@ -40,7 +61,7 @@ mvn package -q
 
 ---
 
-## ⚙️ 설정 (`plugins/jeminSMPv1/config.yml`)
+## ⚙️ 설정 (`plugins/JeminSMPv2/config.yml`)
 
 ```yaml
 discord:
@@ -178,7 +199,7 @@ afk:
 
 ---
 
-## 📁 데이터 파일 (`plugins/jeminSMPv1/`)
+## 📁 데이터 파일 (`plugins/JeminSMPv2/`)
 
 ```
 config.yml          — 전체 설정 (스케줄 포함)

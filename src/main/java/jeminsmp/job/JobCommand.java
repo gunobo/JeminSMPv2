@@ -1,6 +1,7 @@
 package jeminsmp.job;
 
 import jeminsmp.JeminSMPPlugin;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -36,6 +37,7 @@ public class JobCommand implements CommandExecutor, TabCompleter {
             case "select" -> handleSelect(player, args);
             case "buyscroll" -> handleBuyScroll(player);
             case "forceselect" -> handleForceSelect(player, args); // 전직의 서 버튼 전용 (확인 절차 없이 즉시 전직)
+            case "admin" -> handleAdmin(player, args);
             default -> sendHelp(player);
         }
         return true;
@@ -136,6 +138,46 @@ public class JobCommand implements CommandExecutor, TabCompleter {
         }
     }
 
+    // ── 관리자: 경험치 즉시 지급 / 레벨(미션) 즉시 설정 ──
+
+    private void handleAdmin(Player sender, String[] args) {
+        if (!sender.isOp()) { sender.sendMessage("§c관리자만 사용할 수 있습니다."); return; }
+        if (args.length < 2) { sender.sendMessage("§c사용법: /job admin <give|setlevel> <닉네임> <값>"); return; }
+        switch (args[1].toLowerCase()) {
+            case "give" -> handleAdminGive(sender, args);
+            case "setlevel" -> handleAdminSetLevel(sender, args);
+            default -> sender.sendMessage("§c사용법: /job admin <give|setlevel> <닉네임> <값>");
+        }
+    }
+
+    private void handleAdminGive(Player sender, String[] args) {
+        if (args.length < 4) { sender.sendMessage("§c사용법: /job admin give <닉네임> <경험치>"); return; }
+        Player target = Bukkit.getPlayerExact(args[2]);
+        if (target == null) { sender.sendMessage("§c접속 중인 플레이어가 아닙니다."); return; }
+        long amount;
+        try { amount = Long.parseLong(args[3]); } catch (NumberFormatException e) { sender.sendMessage("§c경험치는 숫자로 입력하세요."); return; }
+
+        var d = plugin.getJobManager().getData(target.getUniqueId());
+        if (d.job == null) { sender.sendMessage("§c" + target.getName() + "님은 아직 직업이 없습니다."); return; }
+
+        plugin.getJobManager().addExp(target, d.job, amount);
+        sender.sendMessage("§a" + target.getName() + "§7님에게 " + d.job.display() + " 경험치 §e" + amount + "§7 지급 완료.");
+    }
+
+    private void handleAdminSetLevel(Player sender, String[] args) {
+        if (args.length < 4) { sender.sendMessage("§c사용법: /job admin setlevel <닉네임> <레벨>"); return; }
+        Player target = Bukkit.getPlayerExact(args[2]);
+        if (target == null) { sender.sendMessage("§c접속 중인 플레이어가 아닙니다."); return; }
+        int level;
+        try { level = Integer.parseInt(args[3]); } catch (NumberFormatException e) { sender.sendMessage("§c레벨은 숫자로 입력하세요."); return; }
+
+        var d = plugin.getJobManager().getData(target.getUniqueId());
+        if (d.job == null) { sender.sendMessage("§c" + target.getName() + "님은 아직 직업이 없습니다."); return; }
+
+        plugin.getJobManager().setLevel(target, level);
+        sender.sendMessage("§a" + target.getName() + "§7님의 " + d.job.display() + " 레벨을 §eLv." + d.level + "§7(으)로 설정 완료.");
+    }
+
     private void sendHelp(Player player) {
         player.sendMessage("""
                 §6§l=== /job 명령어 ===
@@ -143,13 +185,31 @@ public class JobCommand implements CommandExecutor, TabCompleter {
                 §e/job info §7— 내 직업 정보
                 §e/job select <직업> §7— 직업 선택/변경
                 §e/job buyscroll §7— 전직의 서 구매 (💎 """ + JobItems.JOB_SCROLL_PRICE + "개)");
+        if (player.isOp()) {
+            player.sendMessage("""
+                    §7--- 관리자 ---
+                    §e/job admin give <닉네임> <경험치> §7— 경험치 즉시 지급
+                    §e/job admin setlevel <닉네임> <레벨> §7— 레벨(미션) 즉시 설정""");
+        }
     }
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
-        if (args.length == 1) return List.of("list", "info", "select", "buyscroll");
+        if (args.length == 1) {
+            List<String> subs = new ArrayList<>(List.of("list", "info", "select", "buyscroll"));
+            if (sender.isOp()) subs.add("admin");
+            return subs;
+        }
         if (args.length == 2 && args[0].equalsIgnoreCase("select")) {
             return Arrays.stream(JobType.values()).map(t -> t.name().toLowerCase()).toList();
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("admin")) {
+            return sender.isOp() ? List.of("give", "setlevel") : List.of();
+        }
+        if (args.length == 3 && args[0].equalsIgnoreCase("admin")) {
+            return sender.isOp()
+                    ? Bukkit.getOnlinePlayers().stream().map(Player::getName).toList()
+                    : List.of();
         }
         return new ArrayList<>();
     }

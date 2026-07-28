@@ -140,6 +140,19 @@ public class JobManager {
         save();
     }
 
+    // ── 관리자: 레벨(미션) 즉시 설정 ──
+    public void setLevel(Player player, int level) {
+        JobData d = getData(player.getUniqueId());
+        if (d.job == null) return;
+        d.level = Math.max(1, Math.min(MAX_LEVEL, level));
+        d.exp = 0;
+        save();
+        player.sendMessage("§6§l▲ 관리자에 의해 " + d.job.icon() + " " + d.job.display() + " Lv." + d.level + "(으)로 설정되었습니다.");
+        if (plugin.getJobSkillItemListener() != null) {
+            plugin.getJobSkillItemListener().regrantIfMissing(player);
+        }
+    }
+
     private String describeUnlock(int newLevel) {
         if (newLevel <= CORE_MAX_JOB_LEVEL) {
             SkillType t = UNLOCK_ORDER[(newLevel - 1) % UNLOCK_ORDER.length];

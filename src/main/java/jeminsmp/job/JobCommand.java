@@ -46,7 +46,7 @@ public class JobCommand implements CommandExecutor, TabCompleter {
     private void handleList(Player player) {
         player.sendMessage("§6§l=== 직업 목록 ===");
         for (JobType t : JobType.values()) {
-            player.sendMessage("§7- " + t.icon() + " §e" + t.display() + " §7(§f" + t.name().toLowerCase()
+            player.sendMessage("§7- §e" + t.display() + " §7(§f" + t.name().toLowerCase()
                     + "§7) — " + t.questName() + ": " + t.questAction());
         }
     }
@@ -58,7 +58,7 @@ public class JobCommand implements CommandExecutor, TabCompleter {
             return;
         }
         long need = JobManager.expForLevel(d.level);
-        player.sendMessage("§6§l=== " + d.job.icon() + " " + d.job.display() + " ===");
+        player.sendMessage("§6§l=== " + d.job.display() + " ===");
         player.sendMessage("§7레벨: §fLv." + d.level + " §7(만렙 " + JobManager.MAX_LEVEL + ")");
         if (d.level < JobManager.MAX_LEVEL) {
             player.sendMessage("§7퀘스트: §f" + d.job.questName() + " §7(" + d.job.questAction() + ") §e"
@@ -78,9 +78,9 @@ public class JobCommand implements CommandExecutor, TabCompleter {
         plugin.getJobManager().selectJob(player.getUniqueId(), job);
         plugin.getJobSkillItemListener().onJobChanged(player);
         if (current == null) {
-            player.sendMessage("§a" + job.icon() + " " + job.display() + " §a직업을 선택했습니다!");
+            player.sendMessage("§a" + job.display() + " §a직업을 선택했습니다!");
         } else {
-            player.sendMessage("§a직업을 " + current.display() + " §7→ §a" + job.icon() + " " + job.display()
+            player.sendMessage("§a직업을 " + current.display() + " §7→ §a" + job.display()
                     + " §a(으)로 변경했습니다. §7(레벨/스킬 초기화됨)");
         }
     }
@@ -119,7 +119,7 @@ public class JobCommand implements CommandExecutor, TabCompleter {
         if (current == null) {
             plugin.getJobManager().selectJob(uuid, job);
             plugin.getJobSkillItemListener().onJobChanged(player);
-            player.sendMessage("§a" + job.icon() + " " + job.display() + " §a직업을 선택했습니다!");
+            player.sendMessage("§a" + job.display() + " §a직업을 선택했습니다!");
             return;
         }
 
@@ -129,7 +129,7 @@ public class JobCommand implements CommandExecutor, TabCompleter {
             pendingReselect.remove(uuid);
             plugin.getJobManager().selectJob(uuid, job);
             plugin.getJobSkillItemListener().onJobChanged(player);
-            player.sendMessage("§a직업을 " + current.display() + " §7→ §a" + job.icon() + " " + job.display()
+            player.sendMessage("§a직업을 " + current.display() + " §7→ §a" + job.display()
                     + " §a(으)로 변경했습니다. §7(레벨/스킬 초기화됨)");
         } else {
             pendingReselect.put(uuid, job);

@@ -131,7 +131,7 @@ public class JobManager {
         }
         if (levelsGained > 0) {
             if (d.level >= MAX_LEVEL) d.exp = 0;
-            player.sendMessage("§6§l▲ 퀘스트 달성! §e" + job.icon() + " " + job.display() + " Lv." + d.level
+            player.sendMessage("§6§l▲ 퀘스트 달성! §e" + job.display() + " Lv." + d.level
                     + " §7— " + describeUnlock(d.level));
             if (plugin.getJobSkillItemListener() != null) {
                 plugin.getJobSkillItemListener().regrantIfMissing(player);
@@ -147,7 +147,7 @@ public class JobManager {
         d.level = Math.max(1, Math.min(MAX_LEVEL, level));
         d.exp = 0;
         save();
-        player.sendMessage("§6§l▲ 관리자에 의해 " + d.job.icon() + " " + d.job.display() + " Lv." + d.level + "(으)로 설정되었습니다.");
+        player.sendMessage("§6§l▲ 관리자에 의해 " + d.job.display() + " Lv." + d.level + "(으)로 설정되었습니다.");
         if (plugin.getJobSkillItemListener() != null) {
             plugin.getJobSkillItemListener().regrantIfMissing(player);
         }

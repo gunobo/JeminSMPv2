@@ -62,7 +62,7 @@ public class JobItems {
         Component msg = Component.text(header, NamedTextColor.LIGHT_PURPLE);
         for (JobType t : JobType.values()) {
             msg = msg.append(Component.newline())
-                    .append(Component.text("  [" + t.icon() + " " + t.display() + "]", NamedTextColor.AQUA, TextDecoration.BOLD)
+                    .append(Component.text("  [" + t.display() + "]", NamedTextColor.AQUA, TextDecoration.BOLD)
                             .clickEvent(ClickEvent.runCommand("/job forceselect " + t.name().toLowerCase()))
                             .hoverEvent(HoverEvent.showText(Component.text("클릭하여 " + t.display() + " 선택"))));
         }
@@ -91,7 +91,7 @@ public class JobItems {
     /** 같은 ItemStack 인스턴스에 타입/아이콘/이름을 다시 씀 (전환용). 직업+스킬 조합마다 아이콘이 다름 */
     public static void applySkillType(org.bukkit.plugin.Plugin plugin, ItemStack item, JobType job, SkillType type) {
         ItemMeta meta = item.getItemMeta();
-        meta.displayName(Component.text("⚡ " + job.icon() + " " + job.display() + " · " + type.display() + " 스킬템",
+        meta.displayName(Component.text("⚡ " + job.display() + " · " + type.display() + " 스킬템",
                         NamedTextColor.AQUA, TextDecoration.BOLD)
                 .decoration(TextDecoration.ITALIC, false));
         meta.lore(List.of(

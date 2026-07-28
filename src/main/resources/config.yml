@@ -31,8 +31,10 @@ discord:
     server-stop: true
 
 # 운영 스케줄 설정
+# false: 항상 닫힘(대기열) - OP는 예외, 디스코드 !opennow 로 수동 오픈해야 함
+# true : 아래 slots 시간대에만 열림 (수업시간 등 자동 차단용)
 schedule:
-  enabled: false           # true 로 설정하면 아래 slots 기준으로 입장 제한
+  enabled: false
   timezone: "Asia/Seoul"
   slots:
     # 예시: 평일 18:00~23:00, 주말 14:00~24:00

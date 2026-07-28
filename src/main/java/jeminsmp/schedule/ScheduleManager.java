@@ -63,7 +63,7 @@ public class ScheduleManager {
     public boolean isOpen() {
         if (forceOpen)  return true;
         if (forceClose) return false;
-        if (!enabled)   return true;  // 스케줄 비활성화 → 항상 열림
+        if (!enabled)   return false;  // 스케줄 비활성화 → 기본 닫힘 (관리자가 강제로 열어야 함)
         return isOpenAt(ZonedDateTime.now(timezone));
     }
 

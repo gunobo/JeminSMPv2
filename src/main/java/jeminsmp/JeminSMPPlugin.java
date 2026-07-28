@@ -29,6 +29,10 @@ import jeminsmp.announcement.AnnouncementManager;
 import jeminsmp.autotitle.AutoTitleManager;
 import jeminsmp.waypoint.WaypointCommand;
 import jeminsmp.waypoint.WaypointManager;
+import jeminsmp.job.JobManager;
+import jeminsmp.job.JobListener;
+import jeminsmp.job.JobCommand;
+import jeminsmp.job.SkillCommand;
 
 import jeminsmp.compensation.ClaimCommand;
 import jeminsmp.compensation.CompensationManager;
@@ -96,6 +100,7 @@ public class JeminSMPPlugin extends JavaPlugin {
     private AnnouncementManager announcementManager;
     private AfkManager afkManager;
     private WaypointManager waypointManager;
+    private JobManager jobManager;
     private AutoTitleManager autoTitleManager;
     private SleepManager sleepManager;
     private ScheduleManager scheduleManager;
@@ -139,6 +144,7 @@ public class JeminSMPPlugin extends JavaPlugin {
         tabManager = new TabManager(this);
         afkManager = new AfkManager(this);
         waypointManager = new WaypointManager(this);
+        jobManager = new JobManager(this);
         autoTitleManager = new AutoTitleManager(this);
         announcementManager = new AnnouncementManager(this);
         sleepManager = new SleepManager(this);
@@ -217,6 +223,15 @@ public class JeminSMPPlugin extends JavaPlugin {
         var waypointCmd = new WaypointCommand(this);
         getCommand("wp").setExecutor(waypointCmd);
         getCommand("wp").setTabCompleter(waypointCmd);
+
+        // Job & Skill
+        getServer().getPluginManager().registerEvents(new JobListener(this), this);
+        var jobCmd = new JobCommand(this);
+        getCommand("job").setExecutor(jobCmd);
+        getCommand("job").setTabCompleter(jobCmd);
+        var skillCmd = new SkillCommand(this);
+        getCommand("skill").setExecutor(skillCmd);
+        getCommand("skill").setTabCompleter(skillCmd);
 
         // Trade
         getServer().getPluginManager().registerEvents(new TradeListener(this), this);
@@ -316,6 +331,7 @@ public class JeminSMPPlugin extends JavaPlugin {
     public AfkManager getAfkManager() { return afkManager; }
     public TabManager getTabManager() { return tabManager; }
     public WaypointManager getWaypointManager() { return waypointManager; }
+    public JobManager getJobManager() { return jobManager; }
     public AutoTitleManager getAutoTitleManager() { return autoTitleManager; }
     public SleepManager getSleepManager() { return sleepManager; }
     public ScheduleManager getScheduleManager() { return scheduleManager; }

@@ -63,7 +63,14 @@ commands:
   # 웨이포인트
   wp:
     description: 웨이포인트 관리
-    usage: /wp <add|list|tp|del|share> [이름]
+    usage: /wp <add|list|del|share> [이름]
+  # 직업
+  job:
+    description: 직업 선택 및 정보 확인
+    usage: /job <list|info|select> [직업]
+  skill:
+    description: 직업 스킬 사용/투자
+    usage: /skill <use|invest> <heal|deal|force>
   # 리더보드
   top:
     description: 순위 확인

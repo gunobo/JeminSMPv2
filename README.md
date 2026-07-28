@@ -1,6 +1,6 @@
 # 🗡️ jeminSMPv1
 
-> Paper 26.2 기반 통합 SMP 플러그인  
+> Paper 1.21.11 기반 통합 SMP 플러그인  
 > 기존 플러그인 10개를 하나로 합친 fat jar (~15 MB)
 
 ---

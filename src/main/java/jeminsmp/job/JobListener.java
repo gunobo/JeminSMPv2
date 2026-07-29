@@ -11,25 +11,24 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerFishEvent;
 
-import java.util.Map;
 import java.util.Set;
 
+/** 미션(개수) 기반 진행도 — 광물 종류/몹 종류 상관없이 자격 있는 행동 1회 = 1 */
 public class JobListener implements Listener {
 
     private final JeminSMPPlugin plugin;
 
-    // 광물 종류별 경험치 (심층일수록/희귀할수록 더 높음)
-    private static final Map<Material, Long> ORE_EXP = Map.ofEntries(
-            Map.entry(Material.COAL_ORE, 3L), Map.entry(Material.DEEPSLATE_COAL_ORE, 4L),
-            Map.entry(Material.COPPER_ORE, 3L), Map.entry(Material.DEEPSLATE_COPPER_ORE, 4L),
-            Map.entry(Material.IRON_ORE, 5L), Map.entry(Material.DEEPSLATE_IRON_ORE, 6L),
-            Map.entry(Material.LAPIS_ORE, 6L), Map.entry(Material.DEEPSLATE_LAPIS_ORE, 7L),
-            Map.entry(Material.REDSTONE_ORE, 6L), Map.entry(Material.DEEPSLATE_REDSTONE_ORE, 7L),
-            Map.entry(Material.GOLD_ORE, 8L), Map.entry(Material.DEEPSLATE_GOLD_ORE, 9L),
-            Map.entry(Material.NETHER_GOLD_ORE, 6L), Map.entry(Material.NETHER_QUARTZ_ORE, 5L),
-            Map.entry(Material.EMERALD_ORE, 15L), Map.entry(Material.DEEPSLATE_EMERALD_ORE, 18L),
-            Map.entry(Material.DIAMOND_ORE, 15L), Map.entry(Material.DEEPSLATE_DIAMOND_ORE, 18L),
-            Map.entry(Material.ANCIENT_DEBRIS, 25L)
+    private static final Set<Material> ORES = Set.of(
+            Material.COAL_ORE, Material.DEEPSLATE_COAL_ORE,
+            Material.COPPER_ORE, Material.DEEPSLATE_COPPER_ORE,
+            Material.IRON_ORE, Material.DEEPSLATE_IRON_ORE,
+            Material.LAPIS_ORE, Material.DEEPSLATE_LAPIS_ORE,
+            Material.REDSTONE_ORE, Material.DEEPSLATE_REDSTONE_ORE,
+            Material.GOLD_ORE, Material.DEEPSLATE_GOLD_ORE,
+            Material.NETHER_GOLD_ORE, Material.NETHER_QUARTZ_ORE,
+            Material.EMERALD_ORE, Material.DEEPSLATE_EMERALD_ORE,
+            Material.DIAMOND_ORE, Material.DEEPSLATE_DIAMOND_ORE,
+            Material.ANCIENT_DEBRIS
     );
 
     private static final Set<Material> CROPS = Set.of(
@@ -47,15 +46,14 @@ public class JobListener implements Listener {
         Block block = event.getBlock();
         Material type = block.getType();
 
-        Long oreExp = ORE_EXP.get(type);
-        if (oreExp != null) {
-            plugin.getJobManager().addExp(player, JobType.MINER, oreExp);
+        if (ORES.contains(type)) {
+            plugin.getJobManager().addExp(player, JobType.MINER, 1L);
             return;
         }
 
         if (CROPS.contains(type) && block.getBlockData() instanceof Ageable ageable) {
             if (ageable.getAge() == ageable.getMaximumAge()) {
-                plugin.getJobManager().addExp(player, JobType.FARMER, 4L);
+                plugin.getJobManager().addExp(player, JobType.FARMER, 1L);
             }
         }
     }
@@ -64,13 +62,12 @@ public class JobListener implements Listener {
     public void onEntityDeath(EntityDeathEvent event) {
         Player killer = event.getEntity().getKiller();
         if (killer == null) return;
-        long exp = event.getEntity() instanceof Player ? 20L : 6L;
-        plugin.getJobManager().addExp(killer, JobType.WARRIOR, exp);
+        plugin.getJobManager().addExp(killer, JobType.WARRIOR, 1L);
     }
 
     @EventHandler
     public void onFish(PlayerFishEvent event) {
         if (event.getState() != PlayerFishEvent.State.CAUGHT_FISH) return;
-        plugin.getJobManager().addExp(event.getPlayer(), JobType.FISHER, 8L);
+        plugin.getJobManager().addExp(event.getPlayer(), JobType.FISHER, 1L);
     }
 }

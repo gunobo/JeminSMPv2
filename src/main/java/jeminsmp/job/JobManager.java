@@ -130,9 +130,9 @@ public class JobManager {
         save();
     }
 
-    // 레벨업할수록 필요 경험치가 점점 가파르게 증가 (제곱 곡선)
+    // 미션(개수) 기반 — 광물/몹 종류 상관없이 자격 있는 행동 1회 = 1. 레벨이 오를수록 필요 개수가 점점 늘어남
     public static long expForLevel(int level) {
-        return 50L * level * level;
+        return 5L + level * 5L;
     }
 
     // ── 경험치 지급 & 레벨업 처리 ──

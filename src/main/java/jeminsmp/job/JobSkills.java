@@ -284,9 +284,10 @@ public class JobSkills {
             }
             case DEAL -> {
                 // 돌격: 정면으로 돌진하면서 진행 방향에 걸리는 적 전부 타격 + 자신도 돌진
+                // (물리 속도 대신 위 1칸 + 앞으로 N칸 고정 이동이라 매번 거리가 일정함)
                 double dmg = switch (level) { case 1 -> 6; case 2 -> 9; default -> 12; };
                 double range = switch (level) { case 1 -> 4; case 2 -> 5; default -> 6; };
-                double dashPower = switch (level) { case 1 -> 1.2; case 2 -> 1.4; default -> 1.6; };
+                int forwardBlocks = switch (level) { case 1 -> 3; case 2 -> 4; default -> 5; };
 
                 Vector dir = player.getLocation().getDirection().setY(0);
                 if (dir.lengthSquared() < 0.0001) dir = new Vector(0, 0, 1);
@@ -306,9 +307,17 @@ public class JobSkills {
                     particle(e.getLocation().add(0, 1, 0), Particle.SWEEP_ATTACK, 3, 0.2, 0.2, 0.2);
                     hit++;
                 }
-                Vector dash = dir.clone().multiply(dashPower);
-                dash.setY(0.35);
-                player.setVelocity(player.getVelocity().add(dash));
+
+                Location dest = player.getLocation().clone().add(0, 1, 0);
+                for (int i = 1; i <= forwardBlocks; i++) {
+                    Location step = player.getLocation().clone().add(dir.clone().multiply(i)).add(0, 1, 0);
+                    boolean blocked = step.getBlock().getType().isSolid() || step.clone().add(0, 1, 0).getBlock().getType().isSolid();
+                    if (blocked) break;
+                    dest = step;
+                }
+                dest.setDirection(dir);
+                player.teleport(dest);
+
                 sound(player, Sound.ENTITY_IRON_GOLEM_ATTACK, 1f, 1.2f);
                 sound(player, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1f, 0.8f);
                 player.sendMessage("§c⚔ 돌격! §7전방으로 돌진하며 " + hit + "개체에게 " + (int) dmg + " 피해.");

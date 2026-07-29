@@ -7,14 +7,31 @@ import org.bukkit.entity.Player;
 import java.io.File;
 import java.io.IOException;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public class JobManager {
 
     public static final int MAX_LEVEL = 30;
+    public static final int TIER1_MAX_LEVEL = 60; // 1차 전직 후 레벨 상한
     public static final int MAX_SKILL_LEVEL = 5;
+
+    // 1차 전직 조건: 만렙 + 누적 활동(직업 공통 행동) + 누적 희귀 활동(직업별로 다름)
+    private static final Map<JobType, Long> ADVANCE_MAIN_REQ = Map.of(
+            JobType.MINER, 10_000L, JobType.FARMER, 10_000L, JobType.WARRIOR, 10_000L, JobType.FISHER, 10_000L
+    );
+    private static final Map<JobType, Long> ADVANCE_RARE_REQ = Map.of(
+            JobType.MINER, 500L, JobType.FARMER, 1_000L, JobType.WARRIOR, 100L, JobType.FISHER, 50L
+    );
+    private static final Map<JobType, String> ADVANCE_RARE_LABEL = Map.of(
+            JobType.MINER, "희귀 광물(다이아몬드/고대 잔해)",
+            JobType.FARMER, "네더워트 수확",
+            JobType.WARRIOR, "플레이어 처치",
+            JobType.FISHER, "보물 낚시"
+    );
 
     // 딜 -> 힐 -> 포스 순서로 돌아가며 레벨 1개씩 자동 해금/성장. 3개 다 5레벨 찍으면(직업레벨 15) 이동기가 이어서 해금/성장.
     private static final SkillType[] UNLOCK_ORDER = { SkillType.DEAL, SkillType.HEAL, SkillType.FORCE };
@@ -27,6 +44,10 @@ public class JobManager {
         // 현재 선택 안 된 다른 직업들의 저장된 진행도 (전직해도 안 사라지게)
         final Map<JobType, Integer> savedLevel = new EnumMap<>(JobType.class);
         final Map<JobType, Long> savedExp = new EnumMap<>(JobType.class);
+        // 1차 전직용 누적치(레벨업으로 소비되는 exp와 달리 절대 안 줄어듦) + 전직 완료한 직업들
+        final Map<JobType, Long> lifetimeMain = new EnumMap<>(JobType.class);
+        final Map<JobType, Long> lifetimeRare = new EnumMap<>(JobType.class);
+        final Set<JobType> advancedJobs = EnumSet.noneOf(JobType.class);
 
         public int skillLevel(SkillType type) {
             if (type == SkillType.MOVE) {
@@ -85,6 +106,19 @@ public class JobManager {
                         d.savedExp.put(jt, cfg.getLong("players." + uuidStr + ".saved." + jobKey + ".exp", 0));
                     }
                 }
+                var lifetimeSec = cfg.getConfigurationSection("players." + uuidStr + ".lifetime");
+                if (lifetimeSec != null) {
+                    for (String jobKey : lifetimeSec.getKeys(false)) {
+                        JobType jt = JobType.fromString(jobKey);
+                        if (jt == null) continue;
+                        d.lifetimeMain.put(jt, cfg.getLong("players." + uuidStr + ".lifetime." + jobKey + ".main", 0));
+                        d.lifetimeRare.put(jt, cfg.getLong("players." + uuidStr + ".lifetime." + jobKey + ".rare", 0));
+                    }
+                }
+                for (String jobKey : cfg.getStringList("players." + uuidStr + ".advanced")) {
+                    JobType jt = JobType.fromString(jobKey);
+                    if (jt != null) d.advancedJobs.add(jt);
+                }
                 data.put(uuid, d);
             } catch (Exception ignored) {}
         }
@@ -103,6 +137,12 @@ public class JobManager {
                 cfg.set(path + ".saved." + se.getKey().name() + ".level", se.getValue());
                 cfg.set(path + ".saved." + se.getKey().name() + ".exp", d.savedExp.getOrDefault(se.getKey(), 0L));
             }
+            cfg.set(path + ".lifetime", null);
+            for (var le : d.lifetimeMain.entrySet()) {
+                cfg.set(path + ".lifetime." + le.getKey().name() + ".main", le.getValue());
+                cfg.set(path + ".lifetime." + le.getKey().name() + ".rare", d.lifetimeRare.getOrDefault(le.getKey(), 0L));
+            }
+            cfg.set(path + ".advanced", d.advancedJobs.stream().map(Enum::name).toList());
         }
         try { cfg.save(file); }
         catch (IOException e) { plugin.getLogger().warning("jobs.yml 저장 실패: " + e.getMessage()); }
@@ -139,11 +179,16 @@ public class JobManager {
     public void addExp(Player player, JobType job, long amount) {
         JobData d = getData(player.getUniqueId());
         if (d.job != job) return;
-        if (d.level >= MAX_LEVEL) return;
+
+        // 1차 전직용 누적치는 레벨 상한과 무관하게 계속 쌓임
+        d.lifetimeMain.merge(job, amount, Long::sum);
+
+        int cap = d.advancedJobs.contains(job) ? TIER1_MAX_LEVEL : MAX_LEVEL;
+        if (d.level >= cap) { save(); return; }
 
         d.exp += amount;
         int levelsGained = 0;
-        while (d.level < MAX_LEVEL) {
+        while (d.level < cap) {
             long need = expForLevel(d.level);
             if (d.exp < need) break;
             d.exp -= need;
@@ -151,7 +196,7 @@ public class JobManager {
             levelsGained++;
         }
         if (levelsGained > 0) {
-            if (d.level >= MAX_LEVEL) d.exp = 0;
+            if (d.level >= cap) d.exp = 0;
             player.sendMessage("§6§l▲ 퀘스트 달성! §e" + job.display() + " Lv." + d.level
                     + " §7— " + describeUnlock(d.level));
             player.getWorld().playSound(player.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
@@ -162,11 +207,53 @@ public class JobManager {
         save();
     }
 
+    /** 1차 전직 조건용 희귀 활동 누적(직업별로 다른 기준: 희귀광물/네더워트/플레이어처치/보물낚시) */
+    public void addRareProgress(Player player, JobType job, long amount) {
+        JobData d = getData(player.getUniqueId());
+        if (d.job != job) return;
+        d.lifetimeRare.merge(job, amount, Long::sum);
+        save();
+    }
+
+    // ── 1차 전직 ──
+    public boolean hasAdvanced(UUID uuid, JobType job) {
+        return getData(uuid).advancedJobs.contains(job);
+    }
+
+    public boolean canAdvance(UUID uuid) {
+        JobData d = getData(uuid);
+        if (d.job == null || d.advancedJobs.contains(d.job)) return false;
+        if (d.level < MAX_LEVEL) return false;
+        long main = d.lifetimeMain.getOrDefault(d.job, 0L);
+        long rare = d.lifetimeRare.getOrDefault(d.job, 0L);
+        return main >= ADVANCE_MAIN_REQ.get(d.job) && rare >= ADVANCE_RARE_REQ.get(d.job);
+    }
+
+    public String advanceProgressText(UUID uuid) {
+        JobData d = getData(uuid);
+        if (d.job == null) return "직업이 없습니다.";
+        long main = d.lifetimeMain.getOrDefault(d.job, 0L);
+        long rare = d.lifetimeRare.getOrDefault(d.job, 0L);
+        return "레벨 §f" + d.level + "§7/§f" + MAX_LEVEL
+                + " §7| 누적 활동 §f" + main + "§7/§f" + ADVANCE_MAIN_REQ.get(d.job)
+                + " §7| " + ADVANCE_RARE_LABEL.get(d.job) + " §f" + rare + "§7/§f" + ADVANCE_RARE_REQ.get(d.job);
+    }
+
+    public boolean advance(Player player) {
+        UUID uuid = player.getUniqueId();
+        if (!canAdvance(uuid)) return false;
+        JobData d = getData(uuid);
+        d.advancedJobs.add(d.job);
+        save();
+        return true;
+    }
+
     // ── 관리자: 레벨(미션) 즉시 설정 ──
     public void setLevel(Player player, int level) {
         JobData d = getData(player.getUniqueId());
         if (d.job == null) return;
-        d.level = Math.max(1, Math.min(MAX_LEVEL, level));
+        int cap = d.advancedJobs.contains(d.job) ? TIER1_MAX_LEVEL : MAX_LEVEL;
+        d.level = Math.max(1, Math.min(cap, level));
         d.exp = 0;
         save();
         player.sendMessage("§6§l▲ 관리자에 의해 " + d.job.display() + " Lv." + d.level + "(으)로 설정되었습니다.");

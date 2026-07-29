@@ -18,7 +18,7 @@ import java.util.List;
 /** 직업 관련 아이템(전직의 서, 스킬템) 생성/판별. 리소스팩 텍스처가 추가되면 CustomModelData로 바로 반영됨. */
 public class JobItems {
 
-    public static final int JOB_SCROLL_PRICE = 15; // 다이아 가격
+    public static final int JOB_SCROLL_PRICE = 32; // 다이아 가격
     public static final String JOB_SCROLL_MODEL_KEY = "job_change_scroll";
 
     private static NamespacedKey scrollKey(org.bukkit.plugin.Plugin plugin) {

@@ -154,6 +154,7 @@ public class JobManager {
             if (d.level >= MAX_LEVEL) d.exp = 0;
             player.sendMessage("§6§l▲ 퀘스트 달성! §e" + job.display() + " Lv." + d.level
                     + " §7— " + describeUnlock(d.level));
+            player.getWorld().playSound(player.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
             if (plugin.getJobSkillItemListener() != null) {
                 plugin.getJobSkillItemListener().regrantIfMissing(player);
             }
@@ -169,6 +170,7 @@ public class JobManager {
         d.exp = 0;
         save();
         player.sendMessage("§6§l▲ 관리자에 의해 " + d.job.display() + " Lv." + d.level + "(으)로 설정되었습니다.");
+        player.getWorld().playSound(player.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
         if (plugin.getJobSkillItemListener() != null) {
             plugin.getJobSkillItemListener().regrantIfMissing(player);
         }

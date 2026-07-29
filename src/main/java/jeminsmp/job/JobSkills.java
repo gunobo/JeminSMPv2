@@ -385,7 +385,8 @@ public class JobSkills {
             }
             case DEAL -> {
                 double dmg = switch (level) { case 1 -> 5; case 2 -> 7; default -> 9; };
-                LivingEntity target = nearestEnemy(player, 6.0);
+                double range = switch (level) { case 1 -> 10; case 2 -> 13; default -> 16; };
+                LivingEntity target = nearestEnemy(player, range);
                 if (target == null) {
                     sound(player, Sound.ITEM_TRIDENT_HIT, 0.6f, 0.7f);
                     player.sendMessage("§c🎣 작살! §7근처에 적이 없어 허공에 던졌습니다.");

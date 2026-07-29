@@ -7,12 +7,15 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerAnimationEvent;
 import org.bukkit.event.player.PlayerAnimationType;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 /** 스킬마다 별도 아이템(전부 종이 베이스, 아이콘만 다름). 핫바에서 원하는 스킬템으로 바꿔 들고 좌/우클릭으로 발동 */
@@ -72,6 +75,43 @@ public class JobSkillItemListener implements Listener {
         if (!JobItems.isSkillItem(plugin, event.getItemDrop().getItemStack())) return;
         event.setCancelled(true);
         event.getPlayer().sendMessage("§c스킬템은 버릴 수 없습니다.");
+    }
+
+    // 상자/모루/제작대 등 다른 인벤토리로 옮기는 것도 막기 (플레이어 자기 인벤토리 안에서 슬롯 이동은 허용)
+    @EventHandler
+    public void onInventoryClick(InventoryClickEvent event) {
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+        Inventory top = event.getView().getTopInventory();
+        if (top.getType() == org.bukkit.event.inventory.InventoryType.PLAYER
+                || top.getType() == org.bukkit.event.inventory.InventoryType.CRAFTING) return;
+
+        // 내 인벤토리 칸에서 shift-클릭으로 위(다른 인벤토리)로 보내려는 경우
+        if (event.getClick().isShiftClick() && event.getClickedInventory() != null
+                && event.getClickedInventory().equals(event.getView().getBottomInventory())
+                && JobItems.isSkillItem(plugin, event.getCurrentItem())) {
+            event.setCancelled(true);
+            player.sendMessage("§c스킬템은 다른 곳에 넣을 수 없습니다.");
+            return;
+        }
+
+        // 커서에 들고 위(다른 인벤토리) 칸을 직접 클릭해서 넣으려는 경우
+        if (event.getClickedInventory() != null && event.getClickedInventory().equals(top)
+                && JobItems.isSkillItem(plugin, event.getCursor())) {
+            event.setCancelled(true);
+            player.sendMessage("§c스킬템은 다른 곳에 넣을 수 없습니다.");
+        }
+    }
+
+    @EventHandler
+    public void onInventoryDrag(InventoryDragEvent event) {
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+        if (!JobItems.isSkillItem(plugin, event.getOldCursor())) return;
+        int topSize = event.getView().getTopInventory().getSize();
+        boolean touchesTop = event.getRawSlots().stream().anyMatch(slot -> slot < topSize);
+        if (touchesTop) {
+            event.setCancelled(true);
+            player.sendMessage("§c스킬템은 다른 곳에 넣을 수 없습니다.");
+        }
     }
 
     // 부활 시 해금된 스킬 있는데 스킬템이 없으면 다시 지급

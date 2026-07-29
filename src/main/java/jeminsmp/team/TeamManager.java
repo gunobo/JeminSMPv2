@@ -31,7 +31,7 @@ public class TeamManager {
     private final Map<UUID, Long> loginBaseline = new HashMap<>();
 
     private static final String SB_PREFIX = "jsmp_";
-    public static final int MAX_TEAM_SIZE = 3;
+    public static final int MAX_TEAM_SIZE = 4;
 
     public TeamManager(JeminSMPPlugin plugin) {
         this.plugin = plugin;

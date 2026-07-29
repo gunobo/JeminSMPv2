@@ -62,10 +62,22 @@ public class JobSkills {
         player.setHealth(Math.min(max, player.getHealth() + amount));
     }
 
+    /** 공격/디버프 스킬 대상 풀 — 같은 팀원은 제외 */
     private java.util.List<LivingEntity> nearbyEnemies(Player player, double radius) {
+        Set<UUID> teammates = plugin.getTeamManager().getTeammates(player.getUniqueId());
         return player.getWorld().getNearbyEntities(player.getLocation(), radius, radius, radius).stream()
                 .filter(e -> e instanceof LivingEntity && !e.equals(player))
+                .filter(e -> !(e instanceof Player p) || !teammates.contains(p.getUniqueId()))
                 .map(e -> (LivingEntity) e)
+                .toList();
+    }
+
+    /** 힐/버프 스킬 대상 풀 — 같은 팀원만 */
+    private java.util.List<Player> nearbyTeammates(Player player, double radius) {
+        Set<UUID> teammates = plugin.getTeamManager().getTeammates(player.getUniqueId());
+        return player.getWorld().getNearbyEntities(player.getLocation(), radius, radius, radius).stream()
+                .filter(e -> e instanceof Player p && teammates.contains(p.getUniqueId()))
+                .map(e -> (Player) e)
                 .toList();
     }
 
@@ -206,14 +218,12 @@ public class JobSkills {
             case HEAL -> {
                 double amount = switch (level) { case 1 -> 4; case 2 -> 6; default -> 8; };
                 double radius = switch (level) { case 1 -> 5; case 2 -> 6; default -> 7; };
-                Set<UUID> teammates = plugin.getTeamManager().getTeammates(player.getUniqueId());
                 heal(player, amount);
                 if (level >= 3) effect(player, PotionEffectType.SATURATION, 1, 0);
                 int healed = 1;
                 particle(player.getLocation().add(0, 1, 0), Particle.HAPPY_VILLAGER, 12, 0.6, 0.6, 0.6);
                 sound(player, Sound.ENTITY_PLAYER_LEVELUP, 0.6f, 1.4f);
-                for (LivingEntity e : nearbyEnemies(player, radius)) {
-                    if (!(e instanceof Player p) || !teammates.contains(p.getUniqueId())) continue;
+                for (Player p : nearbyTeammates(player, radius)) {
                     heal(p, amount);
                     particle(p.getLocation().add(0, 1, 0), Particle.HAPPY_VILLAGER, 8, 0.5, 0.5, 0.5);
                     healed++;
@@ -254,11 +264,9 @@ public class JobSkills {
                 dir.setY(height);
                 player.setVelocity(dir);
 
-                Set<UUID> teammates = plugin.getTeamManager().getTeammates(player.getUniqueId());
                 int boosted = 1;
                 effect(player, PotionEffectType.SPEED, seconds, amp);
-                for (LivingEntity e : nearbyEnemies(player, 3.5)) {
-                    if (!(e instanceof Player p) || !teammates.contains(p.getUniqueId())) continue;
+                for (Player p : nearbyTeammates(player, 3.5)) {
                     effect(p, PotionEffectType.SPEED, seconds, amp);
                     boosted++;
                 }
@@ -284,10 +292,10 @@ public class JobSkills {
             }
             case DEAL -> {
                 // 돌격: 정면으로 돌진하면서 진행 방향에 걸리는 적 전부 타격 + 자신도 돌진
-                // (물리 속도 대신 위 1칸 + 앞으로 N칸 고정 이동이라 매번 거리가 일정함)
+                // (순간이동은 너무 갑작스러워서 거슬림 -> 부드러운 속도 이동으로, 다만 예전보다 짧게)
                 double dmg = switch (level) { case 1 -> 6; case 2 -> 9; default -> 12; };
                 double range = switch (level) { case 1 -> 4; case 2 -> 5; default -> 6; };
-                int forwardBlocks = switch (level) { case 1 -> 3; case 2 -> 4; default -> 5; };
+                double dashPower = switch (level) { case 1 -> 0.8; case 2 -> 0.95; default -> 1.1; };
 
                 Vector dir = player.getLocation().getDirection().setY(0);
                 if (dir.lengthSquared() < 0.0001) dir = new Vector(0, 0, 1);
@@ -308,15 +316,9 @@ public class JobSkills {
                     hit++;
                 }
 
-                Location dest = player.getLocation().clone().add(0, 1, 0);
-                for (int i = 1; i <= forwardBlocks; i++) {
-                    Location step = player.getLocation().clone().add(dir.clone().multiply(i)).add(0, 1, 0);
-                    boolean blocked = step.getBlock().getType().isSolid() || step.clone().add(0, 1, 0).getBlock().getType().isSolid();
-                    if (blocked) break;
-                    dest = step;
-                }
-                dest.setDirection(dir);
-                player.teleport(dest);
+                Vector dash = dir.clone().multiply(dashPower);
+                dash.setY(0.25);
+                player.setVelocity(player.getVelocity().add(dash));
 
                 sound(player, Sound.ENTITY_IRON_GOLEM_ATTACK, 1f, 1.2f);
                 sound(player, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1f, 0.8f);

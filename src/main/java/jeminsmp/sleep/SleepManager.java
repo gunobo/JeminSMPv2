@@ -11,8 +11,6 @@ import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -30,9 +28,10 @@ public class SleepManager {
     private BukkitTask timeoutTask;
 
     private static final int TIMEOUT_SECONDS = 30;
-    private static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
+    private static final long TICKS_PER_DAY = 24000L;
 
-    private LocalDate lastSkipDate;
+    // 실제 하루가 아니라 "마인크래프트 날짜(월드 tick 기준)" 하루당 1회
+    private long lastSkipDay = -1;
 
     public SleepManager(JeminSMPPlugin plugin) {
         this.plugin = plugin;
@@ -48,9 +47,10 @@ public class SleepManager {
         long time = world.getTime();
         if (time < 12541 || time > 23458) return;
 
-        // 오늘 이미 밤을 건너뛰었으면 재투표 불가
-        if (lastSkipDate != null && lastSkipDate.equals(LocalDate.now(ZONE))) {
-            sleeper.sendMessage(Component.text("§7오늘은 이미 밤을 건너뛰었습니다. 내일 다시 시도해주세요."));
+        // 이 마인크래프트 날짜에 이미 밤을 건너뛰었으면 재투표 불가 (실제 하루가 아니라 게임 내 하루 기준)
+        long currentDay = world.getFullTime() / TICKS_PER_DAY;
+        if (currentDay == lastSkipDay) {
+            sleeper.sendMessage(Component.text("§7오늘(게임 내 기준)은 이미 밤을 건너뛰었습니다. 다음 날에 다시 시도해주세요."));
             return;
         }
 
@@ -145,7 +145,7 @@ public class SleepManager {
         long noCount  = noCount();
 
         if (yesCount > noCount) {
-            lastSkipDate = LocalDate.now(ZONE);
+            lastSkipDay = voteWorld.getFullTime() / TICKS_PER_DAY;
             voteWorld.setTime(0);
             // 자고 있는 플레이어 깨우기
             for (Player p : voteWorld.getPlayers()) {

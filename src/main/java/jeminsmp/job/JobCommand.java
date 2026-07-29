@@ -12,15 +12,12 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 public class JobCommand implements CommandExecutor, TabCompleter {
 
     private final JeminSMPPlugin plugin;
-    private final Map<UUID, JobType> pendingReselect = new HashMap<>();
 
     public JobCommand(JeminSMPPlugin plugin) {
         this.plugin = plugin;
@@ -108,6 +105,7 @@ public class JobCommand implements CommandExecutor, TabCompleter {
         player.getInventory().removeItem(new ItemStack(Material.DIAMOND, amount));
     }
 
+    // 최초 선택만 무료. 이미 직업이 있으면 전직의 서(§e/job buyscroll§7)로만 전직 가능
     private void handleSelect(Player player, String[] args) {
         if (args.length < 2) { player.sendMessage("§c사용법: /job select <광부|농부|전사|어부>"); return; }
         JobType job = JobType.fromString(args[1]);
@@ -125,17 +123,8 @@ public class JobCommand implements CommandExecutor, TabCompleter {
 
         if (current == job) { player.sendMessage("§7이미 " + job.display() + " 직업입니다."); return; }
 
-        if (pendingReselect.get(uuid) == job) {
-            pendingReselect.remove(uuid);
-            plugin.getJobManager().selectJob(uuid, job);
-            plugin.getJobSkillItemListener().onJobChanged(player);
-            player.sendMessage("§a직업을 " + current.display() + " §7→ §a" + job.display()
-                    + " §a(으)로 변경했습니다. §7(§f" + current.display() + "§7 레벨은 저장되어 나중에 돌아오면 유지됩니다)");
-        } else {
-            pendingReselect.put(uuid, job);
-            player.sendMessage("§e" + current.display() + " §7→ §e" + job.display() + " §7로 전직합니다. (각 직업 레벨은 따로 저장되어 있어 안 사라짐)");
-            player.sendMessage("§e정말로 변경하려면 같은 명령어를 §f한 번 더§e 입력하세요: §7/job select " + args[1]);
-        }
+        player.sendMessage("§c이미 " + current.display() + " 직업이 있습니다. 전직하려면 §e전직의 서§c가 필요해요.");
+        player.sendMessage("§7/job buyscroll §7(💎 " + JobItems.JOB_SCROLL_PRICE + "개)로 구매 후 우클릭하세요.");
     }
 
     // ── 관리자: 경험치 즉시 지급 / 레벨(미션) 즉시 설정 ──

@@ -23,19 +23,21 @@ public class JobManager {
             JobType.MINER, 10_000L, JobType.FARMER, 10_000L, JobType.WARRIOR, 100_000L, JobType.FISHER, 10_000L
     );
     private static final Map<JobType, Long> TIER1_RARE_REQ = Map.of(
-            JobType.MINER, 500L, JobType.FARMER, 1_000L, JobType.WARRIOR, 100L, JobType.FISHER, 50L
+            JobType.MINER, 500L, JobType.FARMER, 1_000L, JobType.WARRIOR, 30L, JobType.FISHER, 50L
     );
     private static final Map<JobType, String> TIER1_RARE_LABEL = Map.of(
             JobType.MINER, "희귀 광물(다이아몬드/고대 잔해)",
             JobType.FARMER, "네더워트 수확",
-            JobType.WARRIOR, "플레이어 처치",
+            JobType.WARRIOR, "특수 몹 처치(위더/엔더드래곤/워든/엘더가디언)",
             JobType.FISHER, "보물 낚시"
     );
 
     // 2차 전직 — 지금은 전사만 존재. 다른 직업은 다음 단계가 아직 없어서 canAdvance가 항상 거짓
     private static final Map<JobType, Long> TIER2_MAIN_REQ = Map.of(JobType.WARRIOR, 500_000L);
-    private static final Map<JobType, Long> TIER2_RARE_REQ = Map.of(JobType.WARRIOR, 1_000L);
-    private static final Map<JobType, String> TIER2_RARE_LABEL = Map.of(JobType.WARRIOR, "플레이어 처치");
+    private static final Map<JobType, Long> TIER2_RARE_REQ = Map.of(JobType.WARRIOR, 150L);
+    private static final Map<JobType, String> TIER2_RARE_LABEL = Map.of(
+            JobType.WARRIOR, "특수 몹 처치(위더/엔더드래곤/워든/엘더가디언)"
+    );
 
     private static Map<JobType, Long> mainReq(int tier) { return tier <= 1 ? TIER1_MAIN_REQ : TIER2_MAIN_REQ; }
     private static Map<JobType, Long> rareReq(int tier) { return tier <= 1 ? TIER1_RARE_REQ : TIER2_RARE_REQ; }

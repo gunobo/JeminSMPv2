@@ -4,6 +4,7 @@ import jeminsmp.JeminSMPPlugin;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.Ageable;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -44,6 +45,9 @@ public class JobListener implements Listener {
             Material.NAUTILUS_SHELL, Material.ENCHANTED_BOOK, Material.NAME_TAG,
             Material.SADDLE, Material.BOW, Material.FISHING_ROD, Material.TRIDENT
     );
+    private static final Set<EntityType> BOSS_MOBS = Set.of(
+            EntityType.WITHER, EntityType.ENDER_DRAGON, EntityType.WARDEN, EntityType.ELDER_GUARDIAN
+    );
 
     public JobListener(JeminSMPPlugin plugin) {
         this.plugin = plugin;
@@ -79,7 +83,7 @@ public class JobListener implements Listener {
         Player killer = event.getEntity().getKiller();
         if (killer == null) return;
         plugin.getJobManager().addExp(killer, JobType.WARRIOR, 1L);
-        if (event.getEntity() instanceof Player) plugin.getJobManager().addRareProgress(killer, JobType.WARRIOR, 1L);
+        if (BOSS_MOBS.contains(event.getEntity().getType())) plugin.getJobManager().addRareProgress(killer, JobType.WARRIOR, 1L);
         var d = plugin.getJobManager().getData(killer.getUniqueId());
         if (d.job == JobType.WARRIOR) JobPassives.onWarriorKill(killer, d.level);
 

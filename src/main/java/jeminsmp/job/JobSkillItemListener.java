@@ -9,6 +9,7 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.player.PlayerAnimationEvent;
 import org.bukkit.event.player.PlayerAnimationType;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -111,6 +112,17 @@ public class JobSkillItemListener implements Listener {
         if (touchesTop) {
             event.setCancelled(true);
             player.sendMessage("§c스킬템은 다른 곳에 넣을 수 없습니다.");
+        }
+    }
+
+    // 조합(제작대/인벤토리 2x2)에 재료로 들어가는 것도 막기 — 재료 칸에 있으면 결과물 자체가 안 나오게 함
+    @EventHandler
+    public void onPrepareCraft(PrepareItemCraftEvent event) {
+        for (ItemStack item : event.getInventory().getMatrix()) {
+            if (JobItems.isSkillItem(plugin, item)) {
+                event.getInventory().setResult(null);
+                return;
+            }
         }
     }
 

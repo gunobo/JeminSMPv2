@@ -10,6 +10,7 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
@@ -194,8 +195,8 @@ public class JobSkills {
                             Location loc = center.clone().add(spanA.clone().multiply(a)).add(spanB.clone().multiply(b));
                             var block = loc.getBlock();
                             if (isTunnelable(block)) {
-                                blockParticle(block.getLocation().add(0.5, 0.5, 0.5), block.getType(), 4);
-                                block.setType(Material.AIR);
+                                // 그냥 지워버리면 아이템이 안 나오니, 곡괭이로 캔 것처럼 실제로 드랍되게 함
+                                block.breakNaturally(new ItemStack(Material.NETHERITE_PICKAXE));
                                 broken++;
                             }
                         }

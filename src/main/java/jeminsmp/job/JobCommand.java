@@ -98,10 +98,23 @@ public class JobCommand implements CommandExecutor, TabCompleter {
         int newTier = jm.advance(player);
         int oldCap = JobManager.levelCapForTier(beforeTier);
         int newCap = JobManager.levelCapForTier(newTier);
-        player.sendMessage("§6§l🎉 " + newTier + "차 전직 성공! §e" + job.display()
-                + " §7레벨 상한이 " + oldCap + " → " + newCap + "(으)로 늘어납니다!");
-        player.getWorld().playSound(player.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1f, 0.7f);
+        announceAdvance(player, job, newTier, oldCap, newCap);
         grantAdvanceTitle(player, job, newTier);
+    }
+
+    // 전직은 서버 전체가 알 정도로 크게 알림 (채팅 + 타이틀 + 사운드, 전원 대상)
+    private void announceAdvance(Player player, JobType job, int tier, int oldCap, int newCap) {
+        String bar = "§6§l━━━━━━━━━━━━━━━━━━━━";
+        String line1 = "§6§l🎉 " + player.getName() + "§r§e님이 §f" + job.display() + " " + tier + "차 전직§e에 성공했습니다!";
+        String line2 = "§7레벨 상한 " + oldCap + " → §f" + newCap;
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            p.sendMessage(bar);
+            p.sendMessage(line1);
+            p.sendMessage(line2);
+            p.sendMessage(bar);
+            p.sendTitle("§6§l⚔ 전직!", "§e" + player.getName() + " §7- §f" + job.display() + " " + tier + "차", 10, 70, 20);
+            p.playSound(p.getLocation(), org.bukkit.Sound.ITEM_TOTEM_USE, 1f, 1f);
+        }
     }
 
     // 2차 전직 전용 — 직업별 핵심 드랍 2배 토글

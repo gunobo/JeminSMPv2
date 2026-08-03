@@ -40,6 +40,10 @@ public class JobManager {
     private static final SkillType[] UNLOCK_ORDER = { SkillType.DEAL, SkillType.HEAL, SkillType.FORCE };
     private static final int CORE_MAX_JOB_LEVEL = UNLOCK_ORDER.length * MAX_SKILL_LEVEL; // 15
 
+    // 2차 전직 후(레벨 61~100)에는 딜->힐->포스->이동기 순으로 계속 돌며 한 단계씩 더 성장
+    private static final SkillType[] FULL_CYCLE = { SkillType.DEAL, SkillType.HEAL, SkillType.FORCE, SkillType.MOVE };
+    public static final int MAX_SKILL_LEVEL_TIER2 = MAX_SKILL_LEVEL + (TIER2_MAX_LEVEL - TIER1_MAX_LEVEL) / FULL_CYCLE.length; // 15
+
     public static class JobData {
         public JobType job;
         public int level = 1;
@@ -55,21 +59,27 @@ public class JobManager {
         int tier(JobType job) { return advanceTier.getOrDefault(job, 0); }
 
         public int skillLevel(SkillType type) {
+            int base;
             if (type == SkillType.MOVE) {
-                if (level <= CORE_MAX_JOB_LEVEL) return 0;
-                return Math.min(level - CORE_MAX_JOB_LEVEL, MAX_SKILL_LEVEL);
+                base = level <= CORE_MAX_JOB_LEVEL ? 0 : Math.min(level - CORE_MAX_JOB_LEVEL, MAX_SKILL_LEVEL);
+            } else {
+                int count = 0;
+                for (int lvl = 1; lvl <= Math.min(level, CORE_MAX_JOB_LEVEL); lvl++) {
+                    if (UNLOCK_ORDER[(lvl - 1) % UNLOCK_ORDER.length] == type) count++;
+                }
+                base = Math.min(count, MAX_SKILL_LEVEL);
             }
-            int idx = indexOf(type);
-            int count = 0;
-            for (int lvl = 1; lvl <= Math.min(level, CORE_MAX_JOB_LEVEL); lvl++) {
-                if (UNLOCK_ORDER[(lvl - 1) % UNLOCK_ORDER.length] == type) count++;
-            }
-            return Math.min(count, MAX_SKILL_LEVEL);
+            return base + bonusSkillLevel(type);
         }
 
-        private static int indexOf(SkillType type) {
-            for (int i = 0; i < UNLOCK_ORDER.length; i++) if (UNLOCK_ORDER[i] == type) return i;
-            return -1;
+        // 2차 전직 후(레벨 61~100) 딜->힐->포스->이동기 순으로 도는 추가 성장분
+        private int bonusSkillLevel(SkillType type) {
+            if (level <= TIER1_MAX_LEVEL) return 0;
+            int bonus = 0;
+            for (int lvl = TIER1_MAX_LEVEL + 1; lvl <= level; lvl++) {
+                if (FULL_CYCLE[(lvl - TIER1_MAX_LEVEL - 1) % FULL_CYCLE.length] == type) bonus++;
+            }
+            return bonus;
         }
     }
 
@@ -309,9 +319,15 @@ public class JobManager {
             int skillLevel = ((newLevel - 1) / UNLOCK_ORDER.length) + 1;
             return t.display() + " Lv" + skillLevel + (skillLevel == 1 ? " 해금!" : "로 성장!");
         }
-        int moveLevel = newLevel - CORE_MAX_JOB_LEVEL;
-        if (moveLevel > MAX_SKILL_LEVEL) return "전부 최대 강화 완료";
-        return "이동기 Lv" + moveLevel + (moveLevel == 1 ? " 해금!" : "로 성장!");
+        if (newLevel <= TIER1_MAX_LEVEL) {
+            int moveLevel = newLevel - CORE_MAX_JOB_LEVEL;
+            if (moveLevel > MAX_SKILL_LEVEL) return "전부 최대 강화 완료";
+            return "이동기 Lv" + moveLevel + (moveLevel == 1 ? " 해금!" : "로 성장!");
+        }
+        // 2차 전직 후: 딜 -> 힐 -> 포스 -> 이동기 순으로 계속 돌며 한 단계씩 더 성장
+        SkillType t = FULL_CYCLE[(newLevel - TIER1_MAX_LEVEL - 1) % FULL_CYCLE.length];
+        int bonusLevel = MAX_SKILL_LEVEL + (newLevel - TIER1_MAX_LEVEL - 1) / FULL_CYCLE.length + 1;
+        return t.display() + " Lv" + bonusLevel + "로 성장!";
     }
 
     // ── 쿨다운 ──
@@ -328,7 +344,7 @@ public class JobManager {
     }
 
     public static int cooldownSeconds(int skillLevel) {
-        return switch (skillLevel) {
+        return switch (Math.min(skillLevel, MAX_SKILL_LEVEL)) {
             case 1 -> 60;
             case 2 -> 50;
             case 3 -> 40;

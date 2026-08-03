@@ -340,7 +340,7 @@ public class JobSkills {
                 // 질풍 도약: 높이 뛰어올랐다가 착지하며 충격파(딜의 수평 돌격과 달리 수직 기동+진입)
                 double dmg = switch (level) { case 1 -> 5; case 2 -> 7; default -> 9; };
                 double radius = switch (level) { case 1 -> 3; case 2 -> 3.5; default -> 4; };
-                double jumpPower = switch (level) { case 1 -> 1.1; case 2 -> 1.3; default -> 1.5; };
+                double jumpPower = switch (level) { case 1 -> 0.8; case 2 -> 0.95; default -> 1.1; };
 
                 Vector dir = player.getLocation().getDirection().setY(0);
                 if (dir.lengthSquared() < 0.0001) dir = new Vector(0, 0, 1);
@@ -350,6 +350,13 @@ public class JobSkills {
                 particle(player.getLocation(), Particle.CLOUD, 20, 0.3, 0.1, 0.3);
                 sound(player, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 1f, 1.4f);
                 player.sendMessage("§c⚔ 질풍 도약! §7높이 뛰어올라 착지하며 충격파를 일으킵니다.");
+
+                // 도약~착지 구간은 스킬 연출이지 실수로 떨어진 게 아니므로 낙하 피해 면제
+                var fallGuard = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
+                    if (!player.isOnline()) return;
+                    player.setFallDistance(0f);
+                }, 0L, 1L);
+                plugin.getServer().getScheduler().runTaskLater(plugin, fallGuard::cancel, 40L);
 
                 plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
                     if (!player.isOnline()) return;

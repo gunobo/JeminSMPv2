@@ -65,9 +65,10 @@ public class JobCommand implements CommandExecutor, TabCompleter {
             player.sendMessage("§7퀘스트: §f" + d.job.questName() + " §7(" + d.job.questAction() + ") §e"
                     + d.exp + " / " + need);
         }
+        int skillCap = tier >= 2 ? JobManager.MAX_SKILL_LEVEL_TIER2 : JobManager.MAX_SKILL_LEVEL;
         for (SkillType t : SkillType.values()) {
             int lvl = d.skillLevel(t);
-            player.sendMessage("  §7" + t.display() + ": §f" + lvl + "/" + JobManager.MAX_SKILL_LEVEL);
+            player.sendMessage("  §7" + t.display() + ": §f" + lvl + "/" + skillCap);
         }
         player.sendMessage("§7패시브: §f" + JobPassives.describe(d.job, d.level));
         if (plugin.getJobManager().hasNextTier(player.getUniqueId())) {

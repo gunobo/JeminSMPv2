@@ -18,30 +18,15 @@ public class JobManager {
     public static final int TIER2_MAX_LEVEL = 100; // 2차 전직 후 레벨 상한
     public static final int MAX_SKILL_LEVEL = 5;
 
-    // 1차 전직 조건: 만렙 + 누적 활동(직업 공통 행동) + 누적 희귀 활동(직업별로 다름)
+    // 전직 조건: 누적 활동(직업 공통 행동) 하나만 봄. 단계 오를수록 훨씬 크게 요구.
     private static final Map<JobType, Long> TIER1_MAIN_REQ = Map.of(
             JobType.MINER, 10_000L, JobType.FARMER, 10_000L, JobType.WARRIOR, 100_000L, JobType.FISHER, 10_000L
     );
-    private static final Map<JobType, Long> TIER1_RARE_REQ = Map.of(
-            JobType.MINER, 500L, JobType.FARMER, 1_000L, JobType.WARRIOR, 30L, JobType.FISHER, 50L
-    );
-    private static final Map<JobType, String> TIER1_RARE_LABEL = Map.of(
-            JobType.MINER, "희귀 광물(다이아몬드/고대 잔해)",
-            JobType.FARMER, "네더워트 수확",
-            JobType.WARRIOR, "특수 몹 처치(위더/엔더드래곤/워든/엘더가디언)",
-            JobType.FISHER, "보물 낚시"
-    );
-
-    // 2차 전직 — 지금은 전사만 존재. 다른 직업은 다음 단계가 아직 없어서 canAdvance가 항상 거짓
-    private static final Map<JobType, Long> TIER2_MAIN_REQ = Map.of(JobType.WARRIOR, 500_000L);
-    private static final Map<JobType, Long> TIER2_RARE_REQ = Map.of(JobType.WARRIOR, 150L);
-    private static final Map<JobType, String> TIER2_RARE_LABEL = Map.of(
-            JobType.WARRIOR, "특수 몹 처치(위더/엔더드래곤/워든/엘더가디언)"
+    private static final Map<JobType, Long> TIER2_MAIN_REQ = Map.of(
+            JobType.MINER, 50_000L, JobType.FARMER, 50_000L, JobType.WARRIOR, 500_000L, JobType.FISHER, 50_000L
     );
 
     private static Map<JobType, Long> mainReq(int tier) { return tier <= 1 ? TIER1_MAIN_REQ : TIER2_MAIN_REQ; }
-    private static Map<JobType, Long> rareReq(int tier) { return tier <= 1 ? TIER1_RARE_REQ : TIER2_RARE_REQ; }
-    private static Map<JobType, String> rareLabel(int tier) { return tier <= 1 ? TIER1_RARE_LABEL : TIER2_RARE_LABEL; }
 
     public static int levelCapForTier(int tier) {
         return switch (tier) {
@@ -64,9 +49,8 @@ public class JobManager {
         final Map<JobType, Long> savedExp = new EnumMap<>(JobType.class);
         // 전직용 누적치(레벨업으로 소비되는 exp와 달리 절대 안 줄어듦) + 직업별 전직 단계(0=없음, 1=1차, 2=2차...)
         final Map<JobType, Long> lifetimeMain = new EnumMap<>(JobType.class);
-        final Map<JobType, Long> lifetimeRare = new EnumMap<>(JobType.class);
         final Map<JobType, Integer> advanceTier = new EnumMap<>(JobType.class);
-        boolean warriorDropBoost = false; // 전사 2차 전직 전용 토글(아이템 드랍 2배)
+        boolean doubleYield = false; // 2차 전직 전용 토글 — 직업별 핵심 드랍 2배(광물/작물/몹처치/낚시)
 
         int tier(JobType job) { return advanceTier.getOrDefault(job, 0); }
 
@@ -133,7 +117,6 @@ public class JobManager {
                         JobType jt = JobType.fromString(jobKey);
                         if (jt == null) continue;
                         d.lifetimeMain.put(jt, cfg.getLong("players." + uuidStr + ".lifetime." + jobKey + ".main", 0));
-                        d.lifetimeRare.put(jt, cfg.getLong("players." + uuidStr + ".lifetime." + jobKey + ".rare", 0));
                     }
                 }
                 var tierSec = cfg.getConfigurationSection("players." + uuidStr + ".tier");
@@ -148,7 +131,8 @@ public class JobManager {
                     JobType jt = JobType.fromString(jobKey);
                     if (jt != null) d.advanceTier.merge(jt, 1, Math::max);
                 }
-                d.warriorDropBoost = cfg.getBoolean("players." + uuidStr + ".warriorDropBoost", false);
+                boolean legacyToggle = cfg.getBoolean("players." + uuidStr + ".warriorDropBoost", false);
+                d.doubleYield = cfg.getBoolean("players." + uuidStr + ".doubleYield", legacyToggle);
                 data.put(uuid, d);
             } catch (Exception ignored) {}
         }
@@ -170,14 +154,14 @@ public class JobManager {
             cfg.set(path + ".lifetime", null);
             for (var le : d.lifetimeMain.entrySet()) {
                 cfg.set(path + ".lifetime." + le.getKey().name() + ".main", le.getValue());
-                cfg.set(path + ".lifetime." + le.getKey().name() + ".rare", d.lifetimeRare.getOrDefault(le.getKey(), 0L));
             }
             cfg.set(path + ".advanced", null);
             cfg.set(path + ".tier", null);
             for (var te : d.advanceTier.entrySet()) {
                 cfg.set(path + ".tier." + te.getKey().name(), te.getValue());
             }
-            cfg.set(path + ".warriorDropBoost", d.warriorDropBoost);
+            cfg.set(path + ".warriorDropBoost", null);
+            cfg.set(path + ".doubleYield", d.doubleYield);
         }
         try { cfg.save(file); }
         catch (IOException e) { plugin.getLogger().warning("jobs.yml 저장 실패: " + e.getMessage()); }
@@ -242,14 +226,6 @@ public class JobManager {
         save();
     }
 
-    /** 1차 전직 조건용 희귀 활동 누적(직업별로 다른 기준: 희귀광물/네더워트/플레이어처치/보물낚시) */
-    public void addRareProgress(Player player, JobType job, long amount) {
-        JobData d = getData(player.getUniqueId());
-        if (d.job != job) return;
-        d.lifetimeRare.merge(job, amount, Long::sum);
-        save();
-    }
-
     // ── 전직 (단계 무관 공통 로직) ──
     public int getTier(UUID uuid, JobType job) {
         return getData(uuid).tier(job);
@@ -272,8 +248,7 @@ public class JobManager {
         if (mainNeed == null) return false; // 그 직업엔 다음 단계가 없음
         if (d.level < levelCapForTier(currentTier)) return false;
         long main = d.lifetimeMain.getOrDefault(d.job, 0L);
-        long rare = d.lifetimeRare.getOrDefault(d.job, 0L);
-        return main >= mainNeed && rare >= rareReq(nextTier).get(d.job);
+        return main >= mainNeed;
     }
 
     public String advanceProgressText(UUID uuid) {
@@ -284,10 +259,8 @@ public class JobManager {
         Long mainNeed = mainReq(nextTier).get(d.job);
         if (mainNeed == null) return (currentTier == 0 ? "전직 없음" : currentTier + "차 전직 완료") + " §7(다음 단계 없음)";
         long main = d.lifetimeMain.getOrDefault(d.job, 0L);
-        long rare = d.lifetimeRare.getOrDefault(d.job, 0L);
         return "레벨 §f" + d.level + "§7/§f" + levelCapForTier(currentTier)
-                + " §7| 누적 활동 §f" + main + "§7/§f" + mainNeed
-                + " §7| " + rareLabel(nextTier).get(d.job) + " §f" + rare + "§7/§f" + rareReq(nextTier).get(d.job);
+                + " §7| 누적 활동 §f" + main + "§7/§f" + mainNeed;
     }
 
     /** 성공하면 새로 달성한 단계(1, 2...)를 반환, 실패하면 0 */
@@ -301,18 +274,18 @@ public class JobManager {
         return newTier;
     }
 
-    /** 전사 2차 전직 전용: 아이템 드랍 2배 토글. 자격 없으면 null */
-    public Boolean toggleWarriorDropBoost(Player player) {
+    /** 2차 전직 전용: 직업별 핵심 드랍 2배 토글(광물/작물/몹처치/낚시). 2차 전직 안 했으면 null */
+    public Boolean toggleDoubleYield(Player player) {
         JobData d = getData(player.getUniqueId());
-        if (d.job != JobType.WARRIOR || d.tier(JobType.WARRIOR) < 2) return null;
-        d.warriorDropBoost = !d.warriorDropBoost;
+        if (d.job == null || d.tier(d.job) < 2) return null;
+        d.doubleYield = !d.doubleYield;
         save();
-        return d.warriorDropBoost;
+        return d.doubleYield;
     }
 
-    public boolean isWarriorDropBoostActive(UUID uuid) {
+    public boolean isDoubleYieldActive(UUID uuid, JobType job) {
         JobData d = getData(uuid);
-        return d.job == JobType.WARRIOR && d.tier(JobType.WARRIOR) >= 2 && d.warriorDropBoost;
+        return d.job == job && d.tier(job) >= 2 && d.doubleYield;
     }
 
     // ── 관리자: 레벨(미션) 즉시 설정 ──

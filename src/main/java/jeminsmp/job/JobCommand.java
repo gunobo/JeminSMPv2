@@ -74,9 +74,9 @@ public class JobCommand implements CommandExecutor, TabCompleter {
             player.sendMessage("§7" + (tier + 1) + "차 전직: §f" + plugin.getJobManager().advanceProgressText(player.getUniqueId())
                     + " §7(§e/job advance§7)");
         }
-        if (d.job == JobType.WARRIOR && tier >= 2) {
-            boolean on = plugin.getJobManager().isWarriorDropBoostActive(player.getUniqueId());
-            player.sendMessage("§7아이템 드랍 2배: " + (on ? "§a켜짐" : "§c꺼짐") + " §7(§e/job dropboost§7로 전환)");
+        if (tier >= 2) {
+            boolean on = plugin.getJobManager().isDoubleYieldActive(player.getUniqueId(), d.job);
+            player.sendMessage("§7핵심 드랍 2배: " + (on ? "§a켜짐" : "§c꺼짐") + " §7(§e/job dropboost§7로 전환)");
         }
     }
 
@@ -103,16 +103,16 @@ public class JobCommand implements CommandExecutor, TabCompleter {
         grantAdvanceTitle(player, job, newTier);
     }
 
-    // 전사 2차 전직 전용 — 아이템 드랍 2배 토글
+    // 2차 전직 전용 — 직업별 핵심 드랍 2배 토글
     private void handleDropBoost(Player player) {
-        Boolean state = plugin.getJobManager().toggleWarriorDropBoost(player);
+        Boolean state = plugin.getJobManager().toggleDoubleYield(player);
         if (state == null) {
-            player.sendMessage("§c전사 2차 전직을 완료해야 사용할 수 있습니다.");
+            player.sendMessage("§c2차 전직을 완료해야 사용할 수 있습니다.");
             return;
         }
         player.sendMessage(state
-                ? "§a⚔ 아이템 드랍 2배를 켰습니다."
-                : "§7⚔ 아이템 드랍 2배를 껐습니다.");
+                ? "§a⚡ 핵심 드랍 2배를 켰습니다."
+                : "§7⚡ 핵심 드랍 2배를 껐습니다.");
     }
 
     private void grantAdvanceTitle(Player player, JobType job, int tier) {
@@ -251,7 +251,7 @@ public class JobCommand implements CommandExecutor, TabCompleter {
                 §e/job buyscroll §7— 전직의 서 구매 (💎 """ + JobItems.JOB_SCROLL_PRICE + """
                 개)
                 §e/job advance §7— 전직 (만렙 + 누적 조건 필요, /job info 에서 진행도 확인)
-                §e/job dropboost §7— (전사 2차 전직 전용) 아이템 드랍 2배 토글""");
+                §e/job dropboost §7— (2차 전직 전용) 직업별 핵심 드랍 2배 토글""");
         if (player.isOp()) {
             player.sendMessage("""
                     §7--- 관리자 ---

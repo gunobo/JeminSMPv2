@@ -4,12 +4,12 @@ import jeminsmp.JeminSMPPlugin;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.Ageable;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockDropItemEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerFishEvent;
 
@@ -37,18 +37,6 @@ public class JobListener implements Listener {
             Material.WHEAT, Material.CARROTS, Material.POTATOES, Material.BEETROOTS, Material.NETHER_WART
     );
 
-    // 1차 전직용 "희귀 활동" 판정
-    private static final Set<Material> RARE_ORES = Set.of(
-            Material.DIAMOND_ORE, Material.DEEPSLATE_DIAMOND_ORE, Material.ANCIENT_DEBRIS
-    );
-    private static final Set<Material> TREASURE = Set.of(
-            Material.NAUTILUS_SHELL, Material.ENCHANTED_BOOK, Material.NAME_TAG,
-            Material.SADDLE, Material.BOW, Material.FISHING_ROD, Material.TRIDENT
-    );
-    private static final Set<EntityType> BOSS_MOBS = Set.of(
-            EntityType.WITHER, EntityType.ENDER_DRAGON, EntityType.WARDEN, EntityType.ELDER_GUARDIAN
-    );
-
     public JobListener(JeminSMPPlugin plugin) {
         this.plugin = plugin;
     }
@@ -62,7 +50,6 @@ public class JobListener implements Listener {
 
         if (ORES.contains(type)) {
             plugin.getJobManager().addExp(player, JobType.MINER, 1L);
-            if (RARE_ORES.contains(type)) plugin.getJobManager().addRareProgress(player, JobType.MINER, 1L);
             var d = plugin.getJobManager().getData(player.getUniqueId());
             if (d.job == JobType.MINER) JobPassives.onMinerOre(player, d.level, block.getLocation());
             return;
@@ -71,10 +58,22 @@ public class JobListener implements Listener {
         if (CROPS.contains(type) && block.getBlockData() instanceof Ageable ageable) {
             if (ageable.getAge() == ageable.getMaximumAge()) {
                 plugin.getJobManager().addExp(player, JobType.FARMER, 1L);
-                if (type == Material.NETHER_WART) plugin.getJobManager().addRareProgress(player, JobType.FARMER, 1L);
                 var d = plugin.getJobManager().getData(player.getUniqueId());
                 if (d.job == JobType.FARMER) JobPassives.onFarmerHarvest(player, d.level, block.getLocation());
             }
+        }
+    }
+
+    // 2차 전직 "드랍 2배" — 광부는 광물, 농부는 작물 캘 때 드랍량 2배
+    @EventHandler
+    public void onBlockDropItem(BlockDropItemEvent event) {
+        Player player = event.getPlayer();
+        Material type = event.getBlockState().getType();
+        JobType job = ORES.contains(type) ? JobType.MINER : CROPS.contains(type) ? JobType.FARMER : null;
+        if (job == null) return;
+        if (!plugin.getJobManager().isDoubleYieldActive(player.getUniqueId(), job)) return;
+        for (Item item : event.getItems()) {
+            item.getItemStack().setAmount(item.getItemStack().getAmount() * 2);
         }
     }
 
@@ -83,12 +82,11 @@ public class JobListener implements Listener {
         Player killer = event.getEntity().getKiller();
         if (killer == null) return;
         plugin.getJobManager().addExp(killer, JobType.WARRIOR, 1L);
-        if (BOSS_MOBS.contains(event.getEntity().getType())) plugin.getJobManager().addRareProgress(killer, JobType.WARRIOR, 1L);
         var d = plugin.getJobManager().getData(killer.getUniqueId());
         if (d.job == JobType.WARRIOR) JobPassives.onWarriorKill(killer, d.level);
 
-        // 전사 2차 전직 전용: 아이템 드랍 2배 토글이 켜져 있으면 드랍량 2배
-        if (plugin.getJobManager().isWarriorDropBoostActive(killer.getUniqueId())) {
+        // 전사 2차 전직 "드랍 2배" — 처치 드랍량 2배
+        if (plugin.getJobManager().isDoubleYieldActive(killer.getUniqueId(), JobType.WARRIOR)) {
             event.getDrops().replaceAll(item -> {
                 item.setAmount(item.getAmount() * 2);
                 return item;
@@ -101,10 +99,12 @@ public class JobListener implements Listener {
         if (event.getState() != PlayerFishEvent.State.CAUGHT_FISH) return;
         Player player = event.getPlayer();
         plugin.getJobManager().addExp(player, JobType.FISHER, 1L);
-        if (event.getCaught() instanceof Item item && TREASURE.contains(item.getItemStack().getType())) {
-            plugin.getJobManager().addRareProgress(player, JobType.FISHER, 1L);
-        }
         var d = plugin.getJobManager().getData(player.getUniqueId());
         if (d.job == JobType.FISHER) JobPassives.onFisherCatch(player, d.level, player.getLocation());
+
+        // 어부 2차 전직 "드랍 2배" — 낚은 아이템 개수 2배
+        if (event.getCaught() instanceof Item item && plugin.getJobManager().isDoubleYieldActive(player.getUniqueId(), JobType.FISHER)) {
+            item.getItemStack().setAmount(item.getItemStack().getAmount() * 2);
+        }
     }
 }

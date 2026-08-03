@@ -20,10 +20,10 @@ public class JobManager {
 
     // 전직 조건: 누적 활동(직업 공통 행동) 하나만 봄. 단계 오를수록 훨씬 크게 요구.
     private static final Map<JobType, Long> TIER1_MAIN_REQ = Map.of(
-            JobType.MINER, 10_000L, JobType.FARMER, 10_000L, JobType.WARRIOR, 100_000L, JobType.FISHER, 10_000L
+            JobType.MINER, 10_000L, JobType.FARMER, 10_000L, JobType.WARRIOR, 10_000L, JobType.FISHER, 10_000L
     );
     private static final Map<JobType, Long> TIER2_MAIN_REQ = Map.of(
-            JobType.MINER, 50_000L, JobType.FARMER, 50_000L, JobType.WARRIOR, 500_000L, JobType.FISHER, 50_000L
+            JobType.MINER, 50_000L, JobType.FARMER, 50_000L, JobType.WARRIOR, 50_000L, JobType.FISHER, 50_000L
     );
 
     private static Map<JobType, Long> mainReq(int tier) { return tier <= 1 ? TIER1_MAIN_REQ : TIER2_MAIN_REQ; }

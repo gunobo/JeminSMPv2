@@ -115,6 +115,11 @@ public class JobCommand implements CommandExecutor, TabCompleter {
             p.sendTitle("§6§l⚔ 전직!", "§e" + player.getName() + " §7- §f" + job.display() + " " + tier + "차", 10, 70, 20);
             p.playSound(p.getLocation(), org.bukkit.Sound.ITEM_TOTEM_USE, 1f, 1f);
         }
+
+        if (plugin.getDiscordBot() != null && plugin.getConfig().getBoolean("discord.log.job-advance", true)) {
+            plugin.getDiscordBot().sendEvent("🎉 **" + player.getName() + "** 님이 **" + job.display() + " " + tier
+                    + "차 전직**에 성공했습니다! (레벨 상한 " + oldCap + " → " + newCap + ")");
+        }
     }
 
     // 2차 전직 전용 — 직업별 핵심 드랍 2배 토글

@@ -7,31 +7,47 @@ import org.bukkit.entity.Player;
 import java.io.File;
 import java.io.IOException;
 import java.util.EnumMap;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 public class JobManager {
 
     public static final int MAX_LEVEL = 30;
-    public static final int TIER1_MAX_LEVEL = 60; // 1차 전직 후 레벨 상한
+    public static final int TIER1_MAX_LEVEL = 60;  // 1차 전직 후 레벨 상한
+    public static final int TIER2_MAX_LEVEL = 100; // 2차 전직 후 레벨 상한
     public static final int MAX_SKILL_LEVEL = 5;
 
     // 1차 전직 조건: 만렙 + 누적 활동(직업 공통 행동) + 누적 희귀 활동(직업별로 다름)
-    private static final Map<JobType, Long> ADVANCE_MAIN_REQ = Map.of(
-            JobType.MINER, 10_000L, JobType.FARMER, 10_000L, JobType.WARRIOR, 10_000L, JobType.FISHER, 10_000L
+    private static final Map<JobType, Long> TIER1_MAIN_REQ = Map.of(
+            JobType.MINER, 10_000L, JobType.FARMER, 10_000L, JobType.WARRIOR, 100_000L, JobType.FISHER, 10_000L
     );
-    private static final Map<JobType, Long> ADVANCE_RARE_REQ = Map.of(
+    private static final Map<JobType, Long> TIER1_RARE_REQ = Map.of(
             JobType.MINER, 500L, JobType.FARMER, 1_000L, JobType.WARRIOR, 100L, JobType.FISHER, 50L
     );
-    private static final Map<JobType, String> ADVANCE_RARE_LABEL = Map.of(
+    private static final Map<JobType, String> TIER1_RARE_LABEL = Map.of(
             JobType.MINER, "희귀 광물(다이아몬드/고대 잔해)",
             JobType.FARMER, "네더워트 수확",
             JobType.WARRIOR, "플레이어 처치",
             JobType.FISHER, "보물 낚시"
     );
+
+    // 2차 전직 — 지금은 전사만 존재. 다른 직업은 다음 단계가 아직 없어서 canAdvance가 항상 거짓
+    private static final Map<JobType, Long> TIER2_MAIN_REQ = Map.of(JobType.WARRIOR, 500_000L);
+    private static final Map<JobType, Long> TIER2_RARE_REQ = Map.of(JobType.WARRIOR, 1_000L);
+    private static final Map<JobType, String> TIER2_RARE_LABEL = Map.of(JobType.WARRIOR, "플레이어 처치");
+
+    private static Map<JobType, Long> mainReq(int tier) { return tier <= 1 ? TIER1_MAIN_REQ : TIER2_MAIN_REQ; }
+    private static Map<JobType, Long> rareReq(int tier) { return tier <= 1 ? TIER1_RARE_REQ : TIER2_RARE_REQ; }
+    private static Map<JobType, String> rareLabel(int tier) { return tier <= 1 ? TIER1_RARE_LABEL : TIER2_RARE_LABEL; }
+
+    public static int levelCapForTier(int tier) {
+        return switch (tier) {
+            case 0 -> MAX_LEVEL;
+            case 1 -> TIER1_MAX_LEVEL;
+            default -> TIER2_MAX_LEVEL;
+        };
+    }
 
     // 딜 -> 힐 -> 포스 순서로 돌아가며 레벨 1개씩 자동 해금/성장. 3개 다 5레벨 찍으면(직업레벨 15) 이동기가 이어서 해금/성장.
     private static final SkillType[] UNLOCK_ORDER = { SkillType.DEAL, SkillType.HEAL, SkillType.FORCE };
@@ -44,10 +60,13 @@ public class JobManager {
         // 현재 선택 안 된 다른 직업들의 저장된 진행도 (전직해도 안 사라지게)
         final Map<JobType, Integer> savedLevel = new EnumMap<>(JobType.class);
         final Map<JobType, Long> savedExp = new EnumMap<>(JobType.class);
-        // 1차 전직용 누적치(레벨업으로 소비되는 exp와 달리 절대 안 줄어듦) + 전직 완료한 직업들
+        // 전직용 누적치(레벨업으로 소비되는 exp와 달리 절대 안 줄어듦) + 직업별 전직 단계(0=없음, 1=1차, 2=2차...)
         final Map<JobType, Long> lifetimeMain = new EnumMap<>(JobType.class);
         final Map<JobType, Long> lifetimeRare = new EnumMap<>(JobType.class);
-        final Set<JobType> advancedJobs = EnumSet.noneOf(JobType.class);
+        final Map<JobType, Integer> advanceTier = new EnumMap<>(JobType.class);
+        boolean warriorDropBoost = false; // 전사 2차 전직 전용 토글(아이템 드랍 2배)
+
+        int tier(JobType job) { return advanceTier.getOrDefault(job, 0); }
 
         public int skillLevel(SkillType type) {
             if (type == SkillType.MOVE) {
@@ -115,10 +134,19 @@ public class JobManager {
                         d.lifetimeRare.put(jt, cfg.getLong("players." + uuidStr + ".lifetime." + jobKey + ".rare", 0));
                     }
                 }
+                var tierSec = cfg.getConfigurationSection("players." + uuidStr + ".tier");
+                if (tierSec != null) {
+                    for (String jobKey : tierSec.getKeys(false)) {
+                        JobType jt = JobType.fromString(jobKey);
+                        if (jt != null) d.advanceTier.put(jt, cfg.getInt("players." + uuidStr + ".tier." + jobKey, 0));
+                    }
+                }
+                // 예전(단순 리스트) 형식 호환 — 있으면 1차로 취급
                 for (String jobKey : cfg.getStringList("players." + uuidStr + ".advanced")) {
                     JobType jt = JobType.fromString(jobKey);
-                    if (jt != null) d.advancedJobs.add(jt);
+                    if (jt != null) d.advanceTier.merge(jt, 1, Math::max);
                 }
+                d.warriorDropBoost = cfg.getBoolean("players." + uuidStr + ".warriorDropBoost", false);
                 data.put(uuid, d);
             } catch (Exception ignored) {}
         }
@@ -142,7 +170,12 @@ public class JobManager {
                 cfg.set(path + ".lifetime." + le.getKey().name() + ".main", le.getValue());
                 cfg.set(path + ".lifetime." + le.getKey().name() + ".rare", d.lifetimeRare.getOrDefault(le.getKey(), 0L));
             }
-            cfg.set(path + ".advanced", d.advancedJobs.stream().map(Enum::name).toList());
+            cfg.set(path + ".advanced", null);
+            cfg.set(path + ".tier", null);
+            for (var te : d.advanceTier.entrySet()) {
+                cfg.set(path + ".tier." + te.getKey().name(), te.getValue());
+            }
+            cfg.set(path + ".warriorDropBoost", d.warriorDropBoost);
         }
         try { cfg.save(file); }
         catch (IOException e) { plugin.getLogger().warning("jobs.yml 저장 실패: " + e.getMessage()); }
@@ -183,7 +216,7 @@ public class JobManager {
         // 1차 전직용 누적치는 레벨 상한과 무관하게 계속 쌓임
         d.lifetimeMain.merge(job, amount, Long::sum);
 
-        int cap = d.advancedJobs.contains(job) ? TIER1_MAX_LEVEL : MAX_LEVEL;
+        int cap = levelCapForTier(d.tier(job));
         if (d.level >= cap) { save(); return; }
 
         d.exp += amount;
@@ -215,44 +248,76 @@ public class JobManager {
         save();
     }
 
-    // ── 1차 전직 ──
-    public boolean hasAdvanced(UUID uuid, JobType job) {
-        return getData(uuid).advancedJobs.contains(job);
+    // ── 전직 (단계 무관 공통 로직) ──
+    public int getTier(UUID uuid, JobType job) {
+        return getData(uuid).tier(job);
     }
 
+    /** 현재 직업에 아직 도전 안 한 다음 전직 단계가 존재하는지 (그 직업에 다음 단계 자체가 없으면 거짓) */
+    public boolean hasNextTier(UUID uuid) {
+        JobData d = getData(uuid);
+        if (d.job == null) return false;
+        return mainReq(d.tier(d.job) + 1).containsKey(d.job);
+    }
+
+    /** 다음 단계로 전직 가능한지. 그 직업에 다음 단계가 아예 없으면 항상 거짓 */
     public boolean canAdvance(UUID uuid) {
         JobData d = getData(uuid);
-        if (d.job == null || d.advancedJobs.contains(d.job)) return false;
-        if (d.level < MAX_LEVEL) return false;
+        if (d.job == null) return false;
+        int currentTier = d.tier(d.job);
+        int nextTier = currentTier + 1;
+        Long mainNeed = mainReq(nextTier).get(d.job);
+        if (mainNeed == null) return false; // 그 직업엔 다음 단계가 없음
+        if (d.level < levelCapForTier(currentTier)) return false;
         long main = d.lifetimeMain.getOrDefault(d.job, 0L);
         long rare = d.lifetimeRare.getOrDefault(d.job, 0L);
-        return main >= ADVANCE_MAIN_REQ.get(d.job) && rare >= ADVANCE_RARE_REQ.get(d.job);
+        return main >= mainNeed && rare >= rareReq(nextTier).get(d.job);
     }
 
     public String advanceProgressText(UUID uuid) {
         JobData d = getData(uuid);
         if (d.job == null) return "직업이 없습니다.";
+        int currentTier = d.tier(d.job);
+        int nextTier = currentTier + 1;
+        Long mainNeed = mainReq(nextTier).get(d.job);
+        if (mainNeed == null) return (currentTier == 0 ? "전직 없음" : currentTier + "차 전직 완료") + " §7(다음 단계 없음)";
         long main = d.lifetimeMain.getOrDefault(d.job, 0L);
         long rare = d.lifetimeRare.getOrDefault(d.job, 0L);
-        return "레벨 §f" + d.level + "§7/§f" + MAX_LEVEL
-                + " §7| 누적 활동 §f" + main + "§7/§f" + ADVANCE_MAIN_REQ.get(d.job)
-                + " §7| " + ADVANCE_RARE_LABEL.get(d.job) + " §f" + rare + "§7/§f" + ADVANCE_RARE_REQ.get(d.job);
+        return "레벨 §f" + d.level + "§7/§f" + levelCapForTier(currentTier)
+                + " §7| 누적 활동 §f" + main + "§7/§f" + mainNeed
+                + " §7| " + rareLabel(nextTier).get(d.job) + " §f" + rare + "§7/§f" + rareReq(nextTier).get(d.job);
     }
 
-    public boolean advance(Player player) {
+    /** 성공하면 새로 달성한 단계(1, 2...)를 반환, 실패하면 0 */
+    public int advance(Player player) {
         UUID uuid = player.getUniqueId();
-        if (!canAdvance(uuid)) return false;
+        if (!canAdvance(uuid)) return 0;
         JobData d = getData(uuid);
-        d.advancedJobs.add(d.job);
+        int newTier = d.tier(d.job) + 1;
+        d.advanceTier.put(d.job, newTier);
         save();
-        return true;
+        return newTier;
+    }
+
+    /** 전사 2차 전직 전용: 아이템 드랍 2배 토글. 자격 없으면 null */
+    public Boolean toggleWarriorDropBoost(Player player) {
+        JobData d = getData(player.getUniqueId());
+        if (d.job != JobType.WARRIOR || d.tier(JobType.WARRIOR) < 2) return null;
+        d.warriorDropBoost = !d.warriorDropBoost;
+        save();
+        return d.warriorDropBoost;
+    }
+
+    public boolean isWarriorDropBoostActive(UUID uuid) {
+        JobData d = getData(uuid);
+        return d.job == JobType.WARRIOR && d.tier(JobType.WARRIOR) >= 2 && d.warriorDropBoost;
     }
 
     // ── 관리자: 레벨(미션) 즉시 설정 ──
     public void setLevel(Player player, int level) {
         JobData d = getData(player.getUniqueId());
         if (d.job == null) return;
-        int cap = d.advancedJobs.contains(d.job) ? TIER1_MAX_LEVEL : MAX_LEVEL;
+        int cap = levelCapForTier(d.tier(d.job));
         d.level = Math.max(1, Math.min(cap, level));
         d.exp = 0;
         save();

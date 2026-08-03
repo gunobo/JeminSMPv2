@@ -82,6 +82,14 @@ public class JobListener implements Listener {
         if (event.getEntity() instanceof Player) plugin.getJobManager().addRareProgress(killer, JobType.WARRIOR, 1L);
         var d = plugin.getJobManager().getData(killer.getUniqueId());
         if (d.job == JobType.WARRIOR) JobPassives.onWarriorKill(killer, d.level);
+
+        // 전사 2차 전직 전용: 아이템 드랍 2배 토글이 켜져 있으면 드랍량 2배
+        if (plugin.getJobManager().isWarriorDropBoostActive(killer.getUniqueId())) {
+            event.getDrops().replaceAll(item -> {
+                item.setAmount(item.getAmount() * 2);
+                return item;
+            });
+        }
     }
 
     @EventHandler

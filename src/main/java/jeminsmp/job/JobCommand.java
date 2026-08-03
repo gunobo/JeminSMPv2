@@ -35,6 +35,7 @@ public class JobCommand implements CommandExecutor, TabCompleter {
             case "buyscroll" -> handleBuyScroll(player);
             case "forceselect" -> handleForceSelect(player, args); // 전직의 서 버튼 전용 (확인 절차 없이 즉시 전직)
             case "advance" -> handleAdvance(player);
+            case "dropboost" -> handleDropBoost(player);
             case "admin" -> handleAdmin(player, args);
             default -> sendHelp(player);
         }
@@ -55,10 +56,10 @@ public class JobCommand implements CommandExecutor, TabCompleter {
             player.sendMessage("§c아직 직업을 선택하지 않았습니다. §e/job select <직업>");
             return;
         }
-        boolean advanced = plugin.getJobManager().hasAdvanced(player.getUniqueId(), d.job);
-        int cap = advanced ? JobManager.TIER1_MAX_LEVEL : JobManager.MAX_LEVEL;
+        int tier = plugin.getJobManager().getTier(player.getUniqueId(), d.job);
+        int cap = JobManager.levelCapForTier(tier);
         long need = JobManager.expForLevel(d.level);
-        player.sendMessage("§6§l=== " + d.job.display() + (advanced ? " §7(1차 전직)" : "") + " ===");
+        player.sendMessage("§6§l=== " + d.job.display() + (tier > 0 ? " §7(" + tier + "차 전직)" : "") + " ===");
         player.sendMessage("§7레벨: §fLv." + d.level + " §7(상한 " + cap + ")");
         if (d.level < cap) {
             player.sendMessage("§7퀘스트: §f" + d.job.questName() + " §7(" + d.job.questAction() + ") §e"
@@ -69,48 +70,76 @@ public class JobCommand implements CommandExecutor, TabCompleter {
             player.sendMessage("  §7" + t.display() + ": §f" + lvl + "/" + JobManager.MAX_SKILL_LEVEL);
         }
         player.sendMessage("§7패시브: §f" + JobPassives.describe(d.job, d.level));
-        if (!advanced) {
-            player.sendMessage("§71차 전직: §f" + plugin.getJobManager().advanceProgressText(player.getUniqueId())
+        if (plugin.getJobManager().hasNextTier(player.getUniqueId())) {
+            player.sendMessage("§7" + (tier + 1) + "차 전직: §f" + plugin.getJobManager().advanceProgressText(player.getUniqueId())
                     + " §7(§e/job advance§7)");
+        }
+        if (d.job == JobType.WARRIOR && tier >= 2) {
+            boolean on = plugin.getJobManager().isWarriorDropBoostActive(player.getUniqueId());
+            player.sendMessage("§7아이템 드랍 2배: " + (on ? "§a켜짐" : "§c꺼짐") + " §7(§e/job dropboost§7로 전환)");
         }
     }
 
-    // 만렙 + 누적 조건 채우면 1차 전직 — 레벨 상한이 늘어나고 전용 칭호 지급
+    // 만렙 + 누적 조건 채우면 전직 — 레벨 상한이 늘어나고 전용 칭호 지급
     private void handleAdvance(Player player) {
         var jm = plugin.getJobManager();
         var d = jm.getData(player.getUniqueId());
         if (d.job == null) { player.sendMessage("§c먼저 직업을 선택하세요."); return; }
-        if (jm.hasAdvanced(player.getUniqueId(), d.job)) {
-            player.sendMessage("§7이미 " + d.job.display() + " 1차 전직을 완료했습니다.");
-            return;
-        }
+
+        JobType job = d.job;
+        int beforeTier = jm.getTier(player.getUniqueId(), job);
         if (!jm.canAdvance(player.getUniqueId())) {
-            player.sendMessage("§c아직 1차 전직 조건을 채우지 못했습니다.");
+            player.sendMessage("§c아직 전직 조건을 채우지 못했거나, " + job.display() + "은 다음 전직 단계가 없습니다.");
             player.sendMessage("§7" + jm.advanceProgressText(player.getUniqueId()));
             return;
         }
 
-        JobType job = d.job;
-        jm.advance(player);
-        player.sendMessage("§6§l🎉 1차 전직 성공! §e" + job.display()
-                + " §7레벨 상한이 " + JobManager.MAX_LEVEL + " → " + JobManager.TIER1_MAX_LEVEL + "(으)로 늘어납니다!");
+        int newTier = jm.advance(player);
+        int oldCap = JobManager.levelCapForTier(beforeTier);
+        int newCap = JobManager.levelCapForTier(newTier);
+        player.sendMessage("§6§l🎉 " + newTier + "차 전직 성공! §e" + job.display()
+                + " §7레벨 상한이 " + oldCap + " → " + newCap + "(으)로 늘어납니다!");
         player.getWorld().playSound(player.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1f, 0.7f);
-        grantAdvanceTitle(player, job);
+        grantAdvanceTitle(player, job, newTier);
     }
 
-    private void grantAdvanceTitle(Player player, JobType job) {
+    // 전사 2차 전직 전용 — 아이템 드랍 2배 토글
+    private void handleDropBoost(Player player) {
+        Boolean state = plugin.getJobManager().toggleWarriorDropBoost(player);
+        if (state == null) {
+            player.sendMessage("§c전사 2차 전직을 완료해야 사용할 수 있습니다.");
+            return;
+        }
+        player.sendMessage(state
+                ? "§a⚔ 아이템 드랍 2배를 켰습니다."
+                : "§7⚔ 아이템 드랍 2배를 껐습니다.");
+    }
+
+    private void grantAdvanceTitle(Player player, JobType job, int tier) {
         var tm = plugin.getTitleManager();
-        String id = "job_advance_" + job.name().toLowerCase();
-        String display = switch (job) {
+        String id = "job_advance_" + job.name().toLowerCase() + "_t" + tier;
+        String display = titleFor(job, tier);
+        if (tm.getTitle(id) == null) tm.createTitle(id, 0, display);
+        tm.giveTitle(player.getUniqueId(), id);
+        player.sendMessage("§6🏅 새 칭호 획득! §f" + display.replace('&', '§')
+                + " §7(§e/title equip " + id + "§7로 장착)");
+    }
+
+    private String titleFor(JobType job, int tier) {
+        if (tier >= 2) {
+            return switch (job) {
+                case WARRIOR -> "&4&l[⚔ 백전노장]";
+                case MINER -> "&b&l[⛏ 심층의 지배자]";
+                case FARMER -> "&a&l[🌾 대지의 지배자]";
+                case FISHER -> "&3&l[🎣 파도의 지배자]";
+            };
+        }
+        return switch (job) {
             case MINER -> "&b[⛏ 심층의 거장]";
             case FARMER -> "&a[🌾 대지의 현자]";
             case WARRIOR -> "&c[⚔ 전장의 지배자]";
             case FISHER -> "&3[🎣 심해의 지배자]";
         };
-        if (tm.getTitle(id) == null) tm.createTitle(id, 0, display);
-        tm.giveTitle(player.getUniqueId(), id);
-        player.sendMessage("§6🏅 새 칭호 획득! §f" + display.replace('&', '§')
-                + " §7(§e/title equip " + id + "§7로 장착)");
     }
 
     private void handleForceSelect(Player player, String[] args) {
@@ -221,7 +250,8 @@ public class JobCommand implements CommandExecutor, TabCompleter {
                 §e/job select <직업> §7— 직업 선택/변경
                 §e/job buyscroll §7— 전직의 서 구매 (💎 """ + JobItems.JOB_SCROLL_PRICE + """
                 개)
-                §e/job advance §7— 1차 전직 (만렙 + 누적 조건 필요, /job info 에서 진행도 확인)""");
+                §e/job advance §7— 전직 (만렙 + 누적 조건 필요, /job info 에서 진행도 확인)
+                §e/job dropboost §7— (전사 2차 전직 전용) 아이템 드랍 2배 토글""");
         if (player.isOp()) {
             player.sendMessage("""
                     §7--- 관리자 ---
@@ -233,7 +263,7 @@ public class JobCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 1) {
-            List<String> subs = new ArrayList<>(List.of("list", "info", "select", "buyscroll", "advance"));
+            List<String> subs = new ArrayList<>(List.of("list", "info", "select", "buyscroll", "advance", "dropboost"));
             if (sender.isOp()) subs.add("admin");
             return subs;
         }

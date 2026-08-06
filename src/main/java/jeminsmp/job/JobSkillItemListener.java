@@ -141,6 +141,7 @@ public class JobSkillItemListener implements Listener {
 
     /** 전직 직후 호출: 들고 있는 스킬템들 라벨을 새 직업으로 갱신하고, 새 직업에서 잠긴 스킬템은 회수, 새로 풀린 건 지급 */
     public void onJobChanged(Player player) {
+        plugin.getJobManager().refreshTier3Perk(player);
         var d = plugin.getJobManager().getData(player.getUniqueId());
         if (d.job == null) return;
 

@@ -94,6 +94,17 @@ public class JobListener implements Listener {
         }
     }
 
+    // 어부 3차 전직 — 낚시찌 입질 대기시간 20% 감소
+    @EventHandler
+    public void onFishCast(PlayerFishEvent event) {
+        if (event.getState() != PlayerFishEvent.State.FISHING) return;
+        var d = plugin.getJobManager().getData(event.getPlayer().getUniqueId());
+        if (d.job != JobType.FISHER || d.tier(JobType.FISHER) < 3) return;
+        var hook = event.getHook();
+        hook.setMinWaitTime((int) (hook.getMinWaitTime() * 0.8));
+        hook.setMaxWaitTime((int) (hook.getMaxWaitTime() * 0.8));
+    }
+
     @EventHandler
     public void onFish(PlayerFishEvent event) {
         if (event.getState() != PlayerFishEvent.State.CAUGHT_FISH) return;

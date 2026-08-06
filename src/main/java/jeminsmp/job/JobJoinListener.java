@@ -17,6 +17,7 @@ public class JobJoinListener implements Listener {
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         var player = event.getPlayer();
+        plugin.getJobManager().refreshTier3Perk(player);
         if (plugin.getJobManager().getJob(player.getUniqueId()) != null) return;
 
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {

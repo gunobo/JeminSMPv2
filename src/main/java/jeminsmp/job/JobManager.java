@@ -17,6 +17,7 @@ public class JobManager {
     public static final int TIER1_MAX_LEVEL = 60;  // 1차 전직 후 레벨 상한
     public static final int TIER2_MAX_LEVEL = 100; // 2차 전직 후 레벨 상한
     public static final int TIER3_MAX_LEVEL = 150; // 3차 전직 후 레벨 상한
+    public static final int TIER4_MAX_LEVEL = 200; // 4차 전직 후 레벨 상한
     public static final int MAX_SKILL_LEVEL = 5;
 
     // 전직 조건: 누적 활동(직업 공통 행동) 하나만 봄. 단계 오를수록 훨씬 크게 요구.
@@ -29,12 +30,16 @@ public class JobManager {
     private static final Map<JobType, Long> TIER3_MAIN_REQ = Map.of(
             JobType.MINER, 50_000L, JobType.FARMER, 50_000L, JobType.WARRIOR, 50_000L, JobType.FISHER, 50_000L
     );
+    private static final Map<JobType, Long> TIER4_MAIN_REQ = Map.of(
+            JobType.MINER, 100_000L, JobType.FARMER, 100_000L, JobType.WARRIOR, 100_000L, JobType.FISHER, 100_000L
+    );
 
     private static Map<JobType, Long> mainReq(int tier) {
         return switch (tier) {
             case 1 -> TIER1_MAIN_REQ;
             case 2 -> TIER2_MAIN_REQ;
             case 3 -> TIER3_MAIN_REQ;
+            case 4 -> TIER4_MAIN_REQ;
             default -> Map.of();
         };
     }
@@ -44,7 +49,8 @@ public class JobManager {
             case 0 -> MAX_LEVEL;
             case 1 -> TIER1_MAX_LEVEL;
             case 2 -> TIER2_MAX_LEVEL;
-            default -> TIER3_MAX_LEVEL;
+            case 3 -> TIER3_MAX_LEVEL;
+            default -> TIER4_MAX_LEVEL;
         };
     }
 
@@ -360,8 +366,8 @@ public class JobManager {
                 .put(type, System.currentTimeMillis() + seconds * 1000L);
     }
 
-    public static int cooldownSeconds(int skillLevel) {
-        return switch (Math.min(skillLevel, MAX_SKILL_LEVEL)) {
+    public static int cooldownSeconds(int skillLevel, int tier) {
+        int base = switch (Math.min(skillLevel, MAX_SKILL_LEVEL)) {
             case 1 -> 60;
             case 2 -> 50;
             case 3 -> 40;
@@ -369,5 +375,31 @@ public class JobManager {
             case 5 -> 20;
             default -> 60;
         };
+        // 4차 전직: 모든 스킬 쿨다운 2배 감소(절반)
+        return tier >= 4 ? Math.max(1, base / 2) : base;
+    }
+
+    // ── 3차 전직 전용 직업별 유틸 보너스(공격속도/채굴·수확속도) — 낚시 대기시간 감소는 JobListener에서 직접 처리 ──
+    private static final org.bukkit.NamespacedKey TIER3_ATTACK_SPEED_KEY =
+            new org.bukkit.NamespacedKey("jeminsmp", "job_tier3_atkspd");
+    private static final org.bukkit.NamespacedKey TIER3_BREAK_SPEED_KEY =
+            new org.bukkit.NamespacedKey("jeminsmp", "job_tier3_breakspd");
+
+    public void refreshTier3Perk(Player player) {
+        var atk = player.getAttribute(org.bukkit.attribute.Attribute.ATTACK_SPEED);
+        var brk = player.getAttribute(org.bukkit.attribute.Attribute.BLOCK_BREAK_SPEED);
+        if (atk != null) atk.removeModifier(TIER3_ATTACK_SPEED_KEY);
+        if (brk != null) brk.removeModifier(TIER3_BREAK_SPEED_KEY);
+
+        JobData d = getData(player.getUniqueId());
+        if (d.job == null || d.tier(d.job) < 3) return;
+
+        if (d.job == JobType.WARRIOR && atk != null) {
+            atk.addModifier(new org.bukkit.attribute.AttributeModifier(
+                    TIER3_ATTACK_SPEED_KEY, 0.5, org.bukkit.attribute.AttributeModifier.Operation.ADD_NUMBER));
+        } else if ((d.job == JobType.MINER || d.job == JobType.FARMER) && brk != null) {
+            brk.addModifier(new org.bukkit.attribute.AttributeModifier(
+                    TIER3_BREAK_SPEED_KEY, 0.15, org.bukkit.attribute.AttributeModifier.Operation.ADD_NUMBER));
+        }
     }
 }

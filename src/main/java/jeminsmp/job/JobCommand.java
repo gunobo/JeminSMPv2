@@ -79,6 +79,21 @@ public class JobCommand implements CommandExecutor, TabCompleter {
             boolean on = plugin.getJobManager().isDoubleYieldActive(player.getUniqueId(), d.job);
             player.sendMessage("§7핵심 드랍 2배: " + (on ? "§a켜짐" : "§c꺼짐") + " §7(§e/job dropboost§7로 전환)");
         }
+        if (tier >= 3) {
+            player.sendMessage("§73차 전직 보너스: §f" + tier3PerkDesc(d.job));
+        }
+        if (tier >= 4) {
+            player.sendMessage("§74차 전직 보너스: §f모든 스킬 쿨다운 절반");
+        }
+    }
+
+    private String tier3PerkDesc(JobType job) {
+        return switch (job) {
+            case WARRIOR -> "공격속도 증가";
+            case MINER -> "채굴속도 증가";
+            case FARMER -> "수확속도 증가";
+            case FISHER -> "낚시 대기시간 감소";
+        };
     }
 
     // 만렙 + 누적 조건 채우면 전직 — 레벨 상한이 늘어나고 전용 칭호 지급
@@ -98,6 +113,7 @@ public class JobCommand implements CommandExecutor, TabCompleter {
         int newTier = jm.advance(player);
         int oldCap = JobManager.levelCapForTier(beforeTier);
         int newCap = JobManager.levelCapForTier(newTier);
+        jm.refreshTier3Perk(player);
         announceAdvance(player, job, newTier, oldCap, newCap);
         grantAdvanceTitle(player, job, newTier);
     }
@@ -145,6 +161,14 @@ public class JobCommand implements CommandExecutor, TabCompleter {
     }
 
     private String titleFor(JobType job, int tier) {
+        if (tier >= 4) {
+            return switch (job) {
+                case WARRIOR -> "&4&l&n[⚔ 종전의 군주]";
+                case MINER -> "&e&l&n[⛏ 대지의 창조자]";
+                case FARMER -> "&6&l&n[🌾 풍요의 창조자]";
+                case FISHER -> "&b&l&n[🎣 대양의 창조자]";
+            };
+        }
         if (tier >= 3) {
             return switch (job) {
                 case WARRIOR -> "&4&l[⚔ 전쟁의 화신]";

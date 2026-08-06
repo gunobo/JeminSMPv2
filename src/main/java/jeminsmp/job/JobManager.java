@@ -16,6 +16,7 @@ public class JobManager {
     public static final int MAX_LEVEL = 30;
     public static final int TIER1_MAX_LEVEL = 60;  // 1차 전직 후 레벨 상한
     public static final int TIER2_MAX_LEVEL = 100; // 2차 전직 후 레벨 상한
+    public static final int TIER3_MAX_LEVEL = 150; // 3차 전직 후 레벨 상한
     public static final int MAX_SKILL_LEVEL = 5;
 
     // 전직 조건: 누적 활동(직업 공통 행동) 하나만 봄. 단계 오를수록 훨씬 크게 요구.
@@ -23,16 +24,27 @@ public class JobManager {
             JobType.MINER, 10_000L, JobType.FARMER, 10_000L, JobType.WARRIOR, 10_000L, JobType.FISHER, 10_000L
     );
     private static final Map<JobType, Long> TIER2_MAIN_REQ = Map.of(
+            JobType.MINER, 25_000L, JobType.FARMER, 25_000L, JobType.WARRIOR, 25_000L, JobType.FISHER, 25_000L
+    );
+    private static final Map<JobType, Long> TIER3_MAIN_REQ = Map.of(
             JobType.MINER, 50_000L, JobType.FARMER, 50_000L, JobType.WARRIOR, 50_000L, JobType.FISHER, 50_000L
     );
 
-    private static Map<JobType, Long> mainReq(int tier) { return tier <= 1 ? TIER1_MAIN_REQ : TIER2_MAIN_REQ; }
+    private static Map<JobType, Long> mainReq(int tier) {
+        return switch (tier) {
+            case 1 -> TIER1_MAIN_REQ;
+            case 2 -> TIER2_MAIN_REQ;
+            case 3 -> TIER3_MAIN_REQ;
+            default -> Map.of();
+        };
+    }
 
     public static int levelCapForTier(int tier) {
         return switch (tier) {
             case 0 -> MAX_LEVEL;
             case 1 -> TIER1_MAX_LEVEL;
-            default -> TIER2_MAX_LEVEL;
+            case 2 -> TIER2_MAX_LEVEL;
+            default -> TIER3_MAX_LEVEL;
         };
     }
 
@@ -40,9 +52,14 @@ public class JobManager {
     private static final SkillType[] UNLOCK_ORDER = { SkillType.DEAL, SkillType.HEAL, SkillType.FORCE };
     private static final int CORE_MAX_JOB_LEVEL = UNLOCK_ORDER.length * MAX_SKILL_LEVEL; // 15
 
-    // 2차 전직 후(레벨 61~100)에는 딜->힐->포스->이동기 순으로 계속 돌며 한 단계씩 더 성장
+    // 2차 전직 후(레벨 61~)에는 딜->힐->포스->이동기 순으로 계속 돌며 한 단계씩 더 성장
     private static final SkillType[] FULL_CYCLE = { SkillType.DEAL, SkillType.HEAL, SkillType.FORCE, SkillType.MOVE };
-    public static final int MAX_SKILL_LEVEL_TIER2 = MAX_SKILL_LEVEL + (TIER2_MAX_LEVEL - TIER1_MAX_LEVEL) / FULL_CYCLE.length; // 15
+
+    public static int skillCapForTier(int tier) {
+        int cap = levelCapForTier(tier);
+        if (cap <= TIER1_MAX_LEVEL) return MAX_SKILL_LEVEL;
+        return MAX_SKILL_LEVEL + (cap - TIER1_MAX_LEVEL) / FULL_CYCLE.length;
+    }
 
     public static class JobData {
         public JobType job;

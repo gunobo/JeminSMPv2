@@ -65,7 +65,7 @@ public class JobCommand implements CommandExecutor, TabCompleter {
             player.sendMessage("§7퀘스트: §f" + d.job.questName() + " §7(" + d.job.questAction() + ") §e"
                     + d.exp + " / " + need);
         }
-        int skillCap = tier >= 2 ? JobManager.MAX_SKILL_LEVEL_TIER2 : JobManager.MAX_SKILL_LEVEL;
+        int skillCap = JobManager.skillCapForTier(tier);
         for (SkillType t : SkillType.values()) {
             int lvl = d.skillLevel(t);
             player.sendMessage("  §7" + t.display() + ": §f" + lvl + "/" + skillCap);
@@ -145,6 +145,14 @@ public class JobCommand implements CommandExecutor, TabCompleter {
     }
 
     private String titleFor(JobType job, int tier) {
+        if (tier >= 3) {
+            return switch (job) {
+                case WARRIOR -> "&4&l[⚔ 전쟁의 화신]";
+                case MINER -> "&e&l[⛏ 심연의 전설]";
+                case FARMER -> "&6&l[🌾 계절의 신]";
+                case FISHER -> "&b&l[🎣 심해의 군주]";
+            };
+        }
         if (tier >= 2) {
             return switch (job) {
                 case WARRIOR -> "&4&l[⚔ 백전노장]";

@@ -39,7 +39,7 @@ public class JobListener implements Listener {
 
     // 드랍 2배 보정에서 제외하는 희귀/고가치 아이템 (불사의 토템, 네더의 별 등 — 파밍 남용 방지)
     private static final Set<Material> NO_DOUBLE = Set.of(
-            Material.NETHER_STAR, Material.TOTEM_OF_UNDYING, Material.SHULKER_SHELL,
+            Material.NETHER_STAR, Material.TOTEM_OF_UNDYING,
             Material.TRIDENT, Material.NAUTILUS_SHELL, Material.DRAGON_EGG
     );
 

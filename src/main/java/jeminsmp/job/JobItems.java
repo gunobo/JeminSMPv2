@@ -13,6 +13,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /** 직업 관련 아이템(전직의 서, 스킬템) 생성/판별. 리소스팩 텍스처가 추가되면 CustomModelData로 바로 반영됨. */
@@ -83,9 +84,9 @@ public class JobItems {
 
     // ── 스킬템 (스킬마다 별도 아이템, 핫바 슬롯 전환으로 바꿔 씀 / 좌클릭·우클릭: 발동) ──
 
-    public static ItemStack createSkillItem(org.bukkit.plugin.Plugin plugin, JobType job, SkillType type) {
+    public static ItemStack createSkillItem(org.bukkit.plugin.Plugin plugin, JobType job, SkillType type, int level, int tier) {
         ItemStack item = new ItemStack(Material.PAPER);
-        applySkillType(plugin, item, job, type);
+        applySkillType(plugin, item, job, type, level, tier);
         return item;
     }
 
@@ -100,15 +101,22 @@ public class JobItems {
         return name == null ? null : SkillType.fromString(name);
     }
 
-    /** 같은 ItemStack 인스턴스에 아이콘/이름을 다시 씀 (전직해서 직업이 바뀌었을 때 라벨 갱신용). 타입 자체는 안 바뀜 */
-    public static void applySkillType(org.bukkit.plugin.Plugin plugin, ItemStack item, JobType job, SkillType type) {
+    /** 같은 ItemStack 인스턴스에 아이콘/이름/설명을 다시 씀 (전직/레벨업으로 직업·수치가 바뀌었을 때 갱신용). 타입 자체는 안 바뀜 */
+    public static void applySkillType(org.bukkit.plugin.Plugin plugin, ItemStack item, JobType job, SkillType type, int level, int tier) {
         ItemMeta meta = item.getItemMeta();
         meta.displayName(Component.text("⚡ " + JobSkills.skillName(job, type), NamedTextColor.AQUA, TextDecoration.BOLD)
                 .decoration(TextDecoration.ITALIC, false));
-        meta.lore(List.of(
-                Component.text(job.display() + " · " + type.display() + " 스킬", NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false),
-                Component.text("좌클릭 또는 우클릭: 스킬 사용", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)
-        ));
+
+        int skillCap = JobManager.skillCapForTier(tier);
+        int cooldown = JobManager.cooldownSeconds(level, tier);
+        List<Component> lore = new ArrayList<>();
+        lore.add(Component.text(job.display() + " · " + type.display() + " 스킬", NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false));
+        for (String line : JobSkills.describe(job, type, level)) {
+            lore.add(Component.text(line, NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        }
+        lore.add(Component.text("레벨 " + level + "/" + skillCap + " · 쿨다운 " + cooldown + "초", NamedTextColor.DARK_AQUA).decoration(TextDecoration.ITALIC, false));
+        lore.add(Component.text("좌클릭 또는 우클릭: 스킬 사용", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+        meta.lore(lore);
         setModelKey(meta, skillModelKey(job, type));
         var useCooldown = meta.getUseCooldown();
         useCooldown.setCooldownGroup(cooldownGroupKey(plugin, type));

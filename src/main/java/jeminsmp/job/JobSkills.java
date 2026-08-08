@@ -16,6 +16,7 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
 import java.util.Comparator;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -51,6 +52,101 @@ public class JobSkills {
             };
             case FISHER -> switch (type) {
                 case HEAL -> "만조"; case DEAL -> "작살"; case FORCE -> "파도"; case MOVE -> "갈고리 사출";
+            };
+        };
+    }
+
+    /**
+     * 스킬템 툴팁용 — 현재 레벨 기준 실제 수치를 정확히 보여줌.
+     * 레벨 4 이상은 코드상 3레벨과 동일한 수치를 쓰므로(switch의 default), lvl을 3으로 클램프해서 계산.
+     */
+    public static List<String> describe(JobType job, SkillType type, int level) {
+        int lvl = Math.max(1, Math.min(level, 3));
+        return switch (job) {
+            case MINER -> switch (type) {
+                case HEAL -> {
+                    int amount = switch (lvl) { case 1 -> 4; case 2 -> 6; default -> 8; };
+                    int seconds = switch (lvl) { case 1 -> 5; case 2 -> 6; default -> 8; };
+                    int haste = lvl >= 3 ? 2 : 1;
+                    yield List.of("체력 " + amount + " 회복", "채굴속도 증가(헤이스트 " + haste + "단계) " + seconds + "초");
+                }
+                case DEAL -> {
+                    int dmg = switch (lvl) { case 1 -> 4; case 2 -> 6; default -> 8; };
+                    yield List.of("반경 3블록 적에게 " + dmg + " 피해", "+ 둔화 3초");
+                }
+                case FORCE -> {
+                    int seconds = switch (lvl) { case 1 -> 3; case 2 -> 4; default -> 5; };
+                    int slow = switch (lvl) { case 1 -> 2; case 2 -> 3; default -> 4; };
+                    yield List.of("반경 4블록 적 띄우기 + 둔화 " + slow + "단계", "시야 방해(Darkness) " + seconds + "초");
+                }
+                case MOVE -> {
+                    int length = switch (lvl) { case 1 -> 3; case 2 -> 5; default -> 7; };
+                    yield List.of("전방 3x3 터널을 뚫으며", length + "블록 돌진 (블록 실제로 드랍)");
+                }
+            };
+            case FARMER -> switch (type) {
+                case HEAL -> {
+                    int amount = switch (lvl) { case 1 -> 4; case 2 -> 6; default -> 8; };
+                    int radius = switch (lvl) { case 1 -> 5; case 2 -> 6; default -> 7; };
+                    yield List.of("자신+반경 " + radius + "블록 팀원", "체력 " + amount + " 회복" + (lvl >= 3 ? " + 포만감" : ""));
+                }
+                case DEAL -> {
+                    int seconds = switch (lvl) { case 1 -> 3; case 2 -> 4; default -> 5; };
+                    int amp = lvl >= 3 ? 2 : 1;
+                    yield List.of("반경 3블록 적 중독 " + amp + "단계", seconds + "초 지속");
+                }
+                case FORCE -> {
+                    int seconds = switch (lvl) { case 1 -> 3; case 2 -> 4; default -> 5; };
+                    int slow = lvl >= 3 ? 4 : 3;
+                    yield List.of("반경 4블록 적 둔화 " + slow + "단계 + 약화", seconds + "초 지속");
+                }
+                case MOVE -> {
+                    int seconds = switch (lvl) { case 1 -> 3; case 2 -> 4; default -> 5; };
+                    int amp = lvl >= 3 ? 2 : 1;
+                    yield List.of("도약 + 자신·반경 3.5블록 팀원", "속도증가 " + amp + "단계 " + seconds + "초");
+                }
+            };
+            case WARRIOR -> switch (type) {
+                case HEAL -> {
+                    int amount = switch (lvl) { case 1 -> 4; case 2 -> 6; default -> 8; };
+                    int seconds = switch (lvl) { case 1 -> 3; case 2 -> 4; default -> 5; };
+                    yield List.of("체력 " + amount + " 회복", "+ 피해감소(저항) " + seconds + "초");
+                }
+                case DEAL -> {
+                    int dmg = switch (lvl) { case 1 -> 6; case 2 -> 9; default -> 12; };
+                    int range = switch (lvl) { case 1 -> 4; case 2 -> 5; default -> 6; };
+                    yield List.of("전방 " + range + "블록 원뿔 범위", dmg + " 피해 + 돌진");
+                }
+                case FORCE -> {
+                    int seconds = switch (lvl) { case 1 -> 3; case 2 -> 4; default -> 5; };
+                    int amp = lvl >= 3 ? 2 : 1;
+                    yield List.of("반경 5블록 적 약화 " + amp + "단계 + 둔화", seconds + "초 지속");
+                }
+                case MOVE -> {
+                    int dmg = switch (lvl) { case 1 -> 5; case 2 -> 7; default -> 9; };
+                    double radius = switch (lvl) { case 1 -> 3; case 2 -> 3.5; default -> 4; };
+                    yield List.of("착지 시 반경 " + radius + "블록에", dmg + " 피해 + 넉백 (낙하데미지 없음)");
+                }
+            };
+            case FISHER -> switch (type) {
+                case HEAL -> {
+                    int seconds = switch (lvl) { case 1 -> 4; case 2 -> 6; default -> 8; };
+                    int amp = lvl >= 3 ? 2 : 1;
+                    yield List.of(seconds + "초 동안 재생 " + amp + "단계");
+                }
+                case DEAL -> {
+                    int dmg = switch (lvl) { case 1 -> 5; case 2 -> 7; default -> 9; };
+                    int range = switch (lvl) { case 1 -> 10; case 2 -> 13; default -> 16; };
+                    yield List.of("사거리 " + range + "블록 내 가장 가까운 적", dmg + " 피해 + 끌어당김");
+                }
+                case FORCE -> {
+                    int seconds = switch (lvl) { case 1 -> 2; case 2 -> 3; default -> 4; };
+                    yield List.of("반경 4블록 적 강하게 밀쳐내기", "+ 둔화 " + seconds + "초");
+                }
+                case MOVE -> {
+                    int maxDist = switch (lvl) { case 1 -> 8; case 2 -> 10; default -> 12; };
+                    yield List.of("사거리 " + maxDist + "블록 갈고리로", "벽에 끌려가기 (허공이면 전진)");
+                }
             };
         };
     }

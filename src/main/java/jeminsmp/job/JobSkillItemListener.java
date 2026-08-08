@@ -151,7 +151,7 @@ public class JobSkillItemListener implements Listener {
             if (!JobItems.isSkillItem(plugin, item)) continue;
             SkillType type = JobItems.getSkillItemType(plugin, item);
             if (type != null && d.skillLevel(type) > 0) {
-                JobItems.applySkillType(plugin, item, d.job, type);
+                JobItems.applySkillType(plugin, item, d.job, type, d.skillLevel(type), d.tier(d.job));
             } else {
                 inv.setItem(i, null);
             }
@@ -165,10 +165,18 @@ public class JobSkillItemListener implements Listener {
         if (d.job == null) return;
 
         for (SkillType type : SkillType.values()) {
-            if (d.skillLevel(type) <= 0) continue;
-            if (JobItems.findSkillItemSlot(plugin, player, type) != -1) continue; // 이미 있음
+            int level = d.skillLevel(type);
+            if (level <= 0) continue;
+            int tier = d.tier(d.job);
 
-            ItemStack skillItem = JobItems.createSkillItem(plugin, d.job, type);
+            int slot = JobItems.findSkillItemSlot(plugin, player, type);
+            if (slot != -1) {
+                // 이미 있음 — 레벨업으로 수치가 바뀌었을 수 있으니 설명/쿨다운 표시만 갱신
+                JobItems.applySkillType(plugin, player.getInventory().getItem(slot), d.job, type, level, tier);
+                continue;
+            }
+
+            ItemStack skillItem = JobItems.createSkillItem(plugin, d.job, type, level, tier);
             var leftover = player.getInventory().addItem(skillItem);
             String name = JobSkills.skillName(d.job, type);
             if (leftover.isEmpty()) {

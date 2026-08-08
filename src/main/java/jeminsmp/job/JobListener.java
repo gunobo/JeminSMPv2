@@ -37,6 +37,12 @@ public class JobListener implements Listener {
             Material.WHEAT, Material.CARROTS, Material.POTATOES, Material.BEETROOTS, Material.NETHER_WART
     );
 
+    // 드랍 2배 보정에서 제외하는 희귀/고가치 아이템 (불사의 토템, 네더의 별 등 — 파밍 남용 방지)
+    private static final Set<Material> NO_DOUBLE = Set.of(
+            Material.NETHER_STAR, Material.TOTEM_OF_UNDYING, Material.SHULKER_SHELL,
+            Material.TRIDENT, Material.NAUTILUS_SHELL, Material.DRAGON_EGG
+    );
+
     public JobListener(JeminSMPPlugin plugin) {
         this.plugin = plugin;
     }
@@ -85,10 +91,10 @@ public class JobListener implements Listener {
         var d = plugin.getJobManager().getData(killer.getUniqueId());
         if (d.job == JobType.WARRIOR) JobPassives.onWarriorKill(killer, d.level);
 
-        // 전사 2차 전직 "드랍 2배" — 처치 드랍량 2배
+        // 전사 2차 전직 "드랍 2배" — 처치 드랍량 2배 (희귀 아이템은 제외)
         if (plugin.getJobManager().isDoubleYieldActive(killer.getUniqueId(), JobType.WARRIOR)) {
             event.getDrops().replaceAll(item -> {
-                item.setAmount(item.getAmount() * 2);
+                if (!NO_DOUBLE.contains(item.getType())) item.setAmount(item.getAmount() * 2);
                 return item;
             });
         }
@@ -113,8 +119,9 @@ public class JobListener implements Listener {
         var d = plugin.getJobManager().getData(player.getUniqueId());
         if (d.job == JobType.FISHER) JobPassives.onFisherCatch(player, d.level, player.getLocation());
 
-        // 어부 2차 전직 "드랍 2배" — 낚은 아이템 개수 2배
-        if (event.getCaught() instanceof Item item && plugin.getJobManager().isDoubleYieldActive(player.getUniqueId(), JobType.FISHER)) {
+        // 어부 2차 전직 "드랍 2배" — 낚은 아이템 개수 2배 (희귀 아이템은 제외)
+        if (event.getCaught() instanceof Item item && plugin.getJobManager().isDoubleYieldActive(player.getUniqueId(), JobType.FISHER)
+                && !NO_DOUBLE.contains(item.getItemStack().getType())) {
             item.getItemStack().setAmount(item.getItemStack().getAmount() * 2);
         }
     }

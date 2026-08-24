@@ -13,6 +13,9 @@ services:
       ENABLE_RCON: "true"
       RCON_PASSWORD: "${RCON_PASSWORD}"
       SERVER_NAME: "${SERVER_NAME:-jeminSMPv2}"
+      # 학교 등 모장 인증 핸드셰이크가 막힌 네트워크에서 접속해야 하면 .env에서 FALSE로.
+      # 오프라인 모드여도 플러그인의 UUID 브릿지가 서버 쪽에서 실제 UUID/스킨을 조회해 고정하므로 기존 데이터 유지됨.
+      ONLINE_MODE: "${ONLINE_MODE:-TRUE}"
       # 접속 제한 (테스트 서버용, 운영서버는 .env에서 비워두면 전체 오픈)
       WHITELIST: "${WHITELIST_NAMES:-}"
       ENFORCE_WHITELIST: "${ENFORCE_WHITELIST:-false}"
